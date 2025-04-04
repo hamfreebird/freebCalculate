@@ -6,8 +6,25 @@
 ## **依赖**
 本库依赖以下第三方库：
 ```python
-numpy astropy scipy matplotlib mpmath
+numpy astropy scipy matplotlib mpmath scikit-image geopandas shapely
+opencv-contrib-python openvino
 ```
+
+---
+
+## **功能**
+
+| 名称                      | 用途       | 依赖                                                    |
+|-------------------------|----------|-------------------------------------------------------|
+| astro_simulator.py      | 星图生成     | numpy astropy scipy                                   |
+| spacetime_event.py      | 光锥计算     | 无                                                     |
+| formula_cal.py          | 常用公式计算   | numpy scipy mpmath matplotlib                         |
+| equation_solver.py      | 求解方程     | 无                                                     |
+| number_operations.py    | 数字计算     | 无                                                     |
+| spacetime_coordinate.py | 四维坐标系    | 无                                                     |
+| contour_map.py          | 等高线地形图生成 | numpy scipy scikit-image geopandas shapely matplotlib |
+| video_interpolator.py   | 视频插帧     | numpy opencv-contrib-python openvino                  |
+| npc_manager.py          | 游戏NPC管理  | 无                                                     |
 
 ---
 
@@ -150,9 +167,77 @@ new_coords = system.move_point(point1, vx=1, vy=2, vz=3, time=5)
 print(f"移动后坐标: {new_coords}")
 ```
 
+#### **contour_map.py 用于等高线地形图生成**
+```python
+from contour_map import VirtualContourMapGenerator
+
+# 初始化生成器
+generator = VirtualContourMapGenerator(
+    width=300,
+    height=300,
+    resolution=30.0,
+    elevation_range=(100, 1500),
+    contour_interval=100,
+    noise_scale=4.0
+)
+
+# 生成数据
+generator.generate_elevation()
+generator.generate_contours()
+
+# 可视化并保存
+generator.plot_contours(save_path="contour_map.png")
+generator.save_to_shapefile("output/contour_map.shp")
+```
+
+#### **video_interpolator.py 用于视频插帧**
+```python
+from video_interpolator import VideoInterpolator
+
+interpolator = VideoInterpolator(
+        input_path='input.mp4',
+        output_path='output.mp4',
+        interp_factor=2,  # 每两帧之间插入2帧
+        method='optical_flow',
+        use_gpu=True
+    )
+
+interpolator.process()
+print("视频插帧处理完成")
+```
+
+#### **npc_manager.py 用于游戏NPC管理**
+```python
+from npc_manager import BaseNPC
+
+npc = BaseNPC(
+    identifier=1002,
+    name="XXX",
+    nickname="xxx",
+    age=28,
+    position=Position(120, 45, 2023),
+    faction="xxxx",
+    image_path=None,
+    quotes=[
+        "xxxx,xxxxx!",
+        "xxxxxxx~"
+    ]
+)
+
+npc.move_to(130, 50)  # 空间移动
+npc.time_travel(2025)  # 时间跳跃
+print(npc.speak())  # 随机语录输出
+print(npc.get_info())  # 查看完整信息
+```
+
 ---
 
 ## **使用**
 - 详细文档在docs目录里，注意formula_cal.py和number_operations.py没有对应文档。
 - number_operations.py不成熟，计算复杂表达式时可能出错。
+- molecular_generator.py用于生成化合物，但问题较多，不成熟，故不建议使用。
+
+---
+
+#### **freebird fly in the sky~**
 
