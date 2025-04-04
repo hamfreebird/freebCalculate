@@ -25,6 +25,7 @@ opencv-contrib-python openvino
 | contour_map.py          | 等高线地形图生成 | numpy scipy scikit-image geopandas shapely matplotlib |
 | video_interpolator.py   | 视频插帧     | numpy opencv-contrib-python openvino                  |
 | npc_manager.py          | 游戏NPC管理  | 无                                                     |
+| orbital_dynamics.py     | 轨道模拟     | numpy scipy matplotlib astropy                        |
 
 ---
 
@@ -228,6 +229,34 @@ npc.move_to(130, 50)  # 空间移动
 npc.time_travel(2025)  # 时间跳跃
 print(npc.speak())  # 随机语录输出
 print(npc.get_info())  # 查看完整信息
+```
+
+#### **orbital_dynamics.py 用于轨道模拟**
+```python
+from orbital_dynamics import OrbitalDynamics
+
+# 初始化低地球轨道
+orb = OrbitalDynamics(
+    a=6778, e=0.0, i=45, raan=30, argp=0, nu=0,
+    mass=2000, propellant=500,
+    isp=300, J2=True
+)
+# 执行机动序列
+sequence = [
+    ('coplanar', 800),  # 提升到800km高度
+    ('plane', 28, 15),  # 调整到倾角28°, RAAN 15°
+    ('bielliptic', 10000),  # 双椭圆转移到10000km中间轨道
+    ('phase', 90, 86400)  # 24小时内调整90°相位
+]
+orb.apply_maneuver_sequence(sequence)
+# 可视化轨道演化
+states = orb.propagate(3600 * 24 * 7, steps=10000)
+orb.plot_3d()
+orb.plot_parameters()
+# 打印机动记录
+print("\n机动历史记录：")
+for name, dv in orb.maneuver_history:
+    print(f"{name}: {dv * 1e3:.2f} m/s")
 ```
 
 ---
