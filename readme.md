@@ -5,27 +5,30 @@
 
 ## **依赖**
 本库依赖以下第三方库：
-```python
+```base
 numpy astropy scipy matplotlib mpmath scikit-image geopandas shapely
 opencv-contrib-python openvino
 ```
+注意，不是所有功能都需要第三方库，可以按需下载，哪些功能需要第三方库详见下表。
 
 ---
 
 ## **功能**
 
-| 名称                      | 用途       | 依赖                                                    |
-|-------------------------|----------|-------------------------------------------------------|
-| astro_simulator.py      | 星图生成     | numpy astropy scipy                                   |
-| spacetime_event.py      | 光锥计算     | 无                                                     |
-| formula_cal.py          | 常用公式计算   | numpy scipy mpmath matplotlib                         |
-| equation_solver.py      | 求解方程     | 无                                                     |
-| number_operations.py    | 数字计算     | 无                                                     |
-| spacetime_coordinate.py | 四维坐标系    | 无                                                     |
-| contour_map.py          | 等高线地形图生成 | numpy scipy scikit-image geopandas shapely matplotlib |
-| video_interpolator.py   | 视频插帧     | numpy opencv-contrib-python openvino                  |
-| npc_manager.py          | 游戏NPC管理  | 无                                                     |
-| orbital_dynamics.py     | 轨道模拟     | numpy scipy matplotlib astropy                        |
+| 名称                      | 用途        | 依赖                                                    |
+|-------------------------|-----------|-------------------------------------------------------|
+| astro_simulator.py      | 星图生成      | numpy astropy scipy                                   |
+| spacetime_event.py      | 光锥计算      | 无                                                     |
+| formula_cal.py          | 常用公式计算    | numpy scipy mpmath matplotlib                         |
+| equation_solver.py      | 求解方程*     | 无                                                     |
+| number_operations.py    | 数字计算*     | 无                                                     |
+| spacetime_coordinate.py | 四维坐标系     | 无                                                     |
+| contour_map.py          | 等高线地形图生成* | numpy scipy scikit-image geopandas shapely matplotlib |
+| video_interpolator.py   | 视频插帧      | numpy opencv-contrib-python openvino                  |
+| npc_manager.py          | 游戏NPC管理   | 无                                                     |
+| orbital_dynamics.py     | 轨道模拟      | numpy scipy matplotlib astropy                        |
+| element_manager.py      | 化合物管理     | element_data (用于示例，在同一目录下)                            |
+`*`号代表不成熟，不建议使用。
 
 ---
 
@@ -259,12 +262,37 @@ for name, dv in orb.maneuver_history:
     print(f"{name}: {dv * 1e3:.2f} m/s")
 ```
 
+#### **element_manager.py 用于化合物管理**
+```python
+# 示例使用铀化合物管理器
+from element_manager import UraniumCompoundManager("U")
+
+# 初始化系统
+uranium_mgr = UraniumCompoundManager("U")
+
+# 添加新化合物
+uranium_mgr.add_compound(
+    name="氧化铀钠",
+    formula="Na2UO4",
+    oxidation_states=[6],
+    phase="固体",
+    uses=["陶瓷着色"]
+)
+
+# 查询化合物
+print(uranium_mgr.find_by_formula("UF6"))
+
+# 获取核特性报告
+nuclear_report = uranium_mgr.get_nuclear_properties()
+```
+
 ---
 
 ## **使用**
 - 详细文档在docs目录里，注意formula_cal.py和number_operations.py没有对应文档。
 - number_operations.py不成熟，计算复杂表达式时可能出错。
-- molecular_generator.py用于生成化合物，但问题较多，不成熟，故不建议使用。
+- element_data.py存储着所有元素的相对原子质量和化合价，以及用于示例的铀和铜的化合物列表.
+- zen_fractal.py没啥用处，依赖pygame，不过可以点开玩玩。
 
 ---
 
