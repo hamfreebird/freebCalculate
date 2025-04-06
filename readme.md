@@ -7,7 +7,7 @@
 本库依赖以下第三方库：
 ```base
 numpy astropy scipy matplotlib mpmath scikit-image geopandas shapely
-opencv-contrib-python openvino
+opencv-contrib-python openvino pubchempy rdkit
 ```
 注意，不是所有功能都需要第三方库，可以按需下载，哪些功能需要第三方库详见下表。
 
@@ -27,7 +27,9 @@ opencv-contrib-python openvino
 | video_interpolator.py   | 视频插帧      | numpy opencv-contrib-python openvino                  |
 | npc_manager.py          | 游戏NPC管理   | 无                                                     |
 | orbital_dynamics.py     | 轨道模拟      | numpy scipy matplotlib astropy                        |
-| element_manager.py      | 化合物管理     | element_data (用于示例，在同一目录下)                            |
+| element_manager.py      | 化合物管理     | element_data (用于示例)                                   |
+| element_generate.py     | 化合物生成     | element_data (用于示例) pubchempy rdkit                   |
+
 `*`号代表不成熟，不建议使用。
 
 ---
@@ -284,6 +286,26 @@ print(uranium_mgr.find_by_formula("UF6"))
 
 # 获取核特性报告
 nuclear_report = uranium_mgr.get_nuclear_properties()
+```
+
+#### **element_generate.py 用于化合物生成**
+```python
+import element_generate
+import element_data
+
+# 两种元素组成的化合物
+calculator = element_generate.ElementCompoundGenerate(element_data.oxidation_states)
+compounds = calculator.calculate_compounds()
+for compound in compounds:
+    compound = element_generate.standardize_formula(compound)
+    print(compound + "  " + str(element_generate.is_chemical_formula_valid(compound)))
+    
+# 三种元素组成的化合物
+calculator = element_generate.ThreeElementCompoundGenerate(element_data.oxidation_states)
+compounds = calculator.calculate_compounds(max_coeff=3)
+for compound in compounds:
+    compound = element_generate.standardize_formula(compound)
+    print(compound + "  " + str(element_generate.is_chemical_formula_valid(compound)))
 ```
 
 ---

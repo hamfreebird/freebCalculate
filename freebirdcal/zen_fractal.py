@@ -16,7 +16,7 @@ clock = pygame.time.Clock()
 GOLDEN_RATIO = (math.sqrt(5) - 1) / 2  # 黄金分割比例
 MAX_DEPTH = 11  # 分形最大递归深度
 BASE_ROT_SPEED = 0.03  # 基础旋转速度(弧度/帧)
-STAR_COUNT = 10000  # 星尘粒子数量
+STAR_COUNT = 100000  # 星尘粒子数量
 BLOOM_LAYERS = 5  # 光晕效果层级
 
 
