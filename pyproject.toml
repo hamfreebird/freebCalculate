@@ -1,0 +1,106 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "freebirdcal"
+version = "0.1.0"
+description = "A comprehensive scientific calculation library with astronomy, physics, chemistry, terrain generation and video processing capabilities"
+readme = "readme.md"
+license = "GPL-3.0-or-later"
+license-files = ["LICENSE"]
+authors = [
+    {name = "freebird", email = "freebirdflyinthesky@outlook.com"}
+]
+maintainers = [
+    {name = "freebird", email = "freebirdflyinthesky@outlook.com"}
+]
+keywords = [
+    "astronomy", "physics", "chemistry", "terrain-generation",
+    "video-processing", "scientific-computing", "simulation"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Astronomy",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Topic :: Scientific/Engineering :: Chemistry",
+    "Topic :: Scientific/Engineering :: Visualization",
+    "Topic :: Multimedia :: Video",
+]
+requires-python = ">=3.7"
+dependencies = [
+    "numpy>=1.19.0",
+    "scipy>=1.6.0",
+    "matplotlib>=3.3.0",
+    "mpmath>=1.2.0",
+]
+
+[project.optional-dependencies]
+astronomy = [
+    "astropy>=5.0",
+]
+geospatial = [
+    "scikit-image>=0.18.0",
+    "geopandas>=0.10.0",
+    "shapely>=1.8.0",
+]
+video = [
+    "opencv-contrib-python>=4.5.0",
+    "openvino>=2022.0.0; platform_machine != 'arm64'",
+    "tqdm>=4.62.0",
+]
+chemistry = [
+    "pubchempy>=1.0.4",
+    "rdkit>=2022.0.0",
+]
+terrain = [
+    "noise>=1.2.0",
+    "pillow>=9.0.0",
+    "landlab>=2.3.0",
+]
+full = [
+    "astropy>=5.0",
+    "scikit-image>=0.18.0",
+    "geopandas>=0.10.0",
+    "shapely>=1.8.0",
+    "opencv-contrib-python>=4.5.0",
+    "openvino>=2022.0.0; platform_machine != 'arm64'",
+    "tqdm>=4.62.0",
+    "pubchempy>=1.0.4",
+    "rdkit>=2022.0.0",
+    "noise>=1.2.0",
+    "pillow>=9.0.0",
+    "landlab>=2.3.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/hamfreebird/freebCalculate"
+Repository = "https://github.com/hamfreebird/freebCalculate"
+"Issue Tracker" = "https://github.com/hamfreebird/freebCalculate/issues"
+
+
+
+[tool.setuptools]
+packages = ["freebirdcal"]
+include-package-data = true
+
+[tool.setuptools.package-data]
+"freebirdcal" = ["*.py", "*.md"]
+
+[tool.setuptools.package-dir]
+"" = "."
+
+[project.entry-points."console_scripts"]
+freebirdcal-demo = "freebirdcal.__main__:main"

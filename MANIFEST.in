@@ -1,0 +1,31 @@
+include LICENSE
+include readme.md
+include pyproject.toml
+
+recursive-include docs *.md
+recursive-include freebirdcal *.py
+recursive-include freebirdcal *.md
+recursive-include freebirdcal *.txt
+recursive-include freebirdcal *.json
+recursive-include freebirdcal *.yaml
+recursive-include freebirdcal *.yml
+recursive-include freebirdcal *.csv
+recursive-include freebirdcal *.dat
+
+# Include any other data files that might be needed
+recursive-include freebirdcal/data *
+recursive-include freebirdcal/examples *
+recursive-include freebirdcal/tests *
+
+# Exclude pycache and other unnecessary files
+global-exclude __pycache__
+global-exclude *.py[co]
+global-exclude *~
+global-exclude .DS_Store
+global-exclude .git
+global-exclude .gitignore
+global-exclude .vscode
+global-exclude .idea
+global-exclude *.egg-info
+global-exclude build
+global-exclude dist

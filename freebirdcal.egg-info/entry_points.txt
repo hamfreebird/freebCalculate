@@ -1,0 +1,2 @@
+[console_scripts]
+freebirdcal-demo = freebirdcal.__main__:main

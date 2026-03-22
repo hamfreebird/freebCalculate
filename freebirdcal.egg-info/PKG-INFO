@@ -1,3 +1,70 @@
+Metadata-Version: 2.4
+Name: freebirdcal
+Version: 0.1.0
+Summary: A comprehensive scientific calculation library with astronomy, physics, chemistry, terrain generation and video processing capabilities
+Author-email: freebird <freebirdflyinthesky@outlook.com>
+Maintainer-email: freebird <freebirdflyinthesky@outlook.com>
+License-Expression: GPL-3.0-or-later
+Project-URL: Homepage, https://github.com/hamfreebird/freebCalculate
+Project-URL: Repository, https://github.com/hamfreebird/freebCalculate
+Project-URL: Issue Tracker, https://github.com/hamfreebird/freebCalculate/issues
+Keywords: astronomy,physics,chemistry,terrain-generation,video-processing,scientific-computing,simulation
+Classifier: Development Status :: 4 - Beta
+Classifier: Intended Audience :: Science/Research
+Classifier: Intended Audience :: Developers
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.7
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Operating System :: OS Independent
+Classifier: Topic :: Scientific/Engineering
+Classifier: Topic :: Scientific/Engineering :: Astronomy
+Classifier: Topic :: Scientific/Engineering :: Physics
+Classifier: Topic :: Scientific/Engineering :: Chemistry
+Classifier: Topic :: Scientific/Engineering :: Visualization
+Classifier: Topic :: Multimedia :: Video
+Requires-Python: >=3.7
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: numpy>=1.19.0
+Requires-Dist: scipy>=1.6.0
+Requires-Dist: matplotlib>=3.3.0
+Requires-Dist: mpmath>=1.2.0
+Provides-Extra: astronomy
+Requires-Dist: astropy>=5.0; extra == "astronomy"
+Provides-Extra: geospatial
+Requires-Dist: scikit-image>=0.18.0; extra == "geospatial"
+Requires-Dist: geopandas>=0.10.0; extra == "geospatial"
+Requires-Dist: shapely>=1.8.0; extra == "geospatial"
+Provides-Extra: video
+Requires-Dist: opencv-contrib-python>=4.5.0; extra == "video"
+Requires-Dist: openvino>=2022.0.0; platform_machine != "arm64" and extra == "video"
+Requires-Dist: tqdm>=4.62.0; extra == "video"
+Provides-Extra: chemistry
+Requires-Dist: pubchempy>=1.0.4; extra == "chemistry"
+Requires-Dist: rdkit>=2022.0.0; extra == "chemistry"
+Provides-Extra: terrain
+Requires-Dist: noise>=1.2.0; extra == "terrain"
+Requires-Dist: pillow>=9.0.0; extra == "terrain"
+Requires-Dist: landlab>=2.3.0; extra == "terrain"
+Provides-Extra: full
+Requires-Dist: astropy>=5.0; extra == "full"
+Requires-Dist: scikit-image>=0.18.0; extra == "full"
+Requires-Dist: geopandas>=0.10.0; extra == "full"
+Requires-Dist: shapely>=1.8.0; extra == "full"
+Requires-Dist: opencv-contrib-python>=4.5.0; extra == "full"
+Requires-Dist: openvino>=2022.0.0; platform_machine != "arm64" and extra == "full"
+Requires-Dist: tqdm>=4.62.0; extra == "full"
+Requires-Dist: pubchempy>=1.0.4; extra == "full"
+Requires-Dist: rdkit>=2022.0.0; extra == "full"
+Requires-Dist: noise>=1.2.0; extra == "full"
+Requires-Dist: pillow>=9.0.0; extra == "full"
+Requires-Dist: landlab>=2.3.0; extra == "full"
+Dynamic: license-file
+
 # **freebCalculate库**
 #### **develop by freebird**
 
