@@ -14,15 +14,24 @@ FreebirdCal provides tools for:
 - Fractal visualization
 """
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 __author__ = "freebird"
 __license__ = "GPLv3"
 
 # Import main modules to make them available at package level
 try:
-    from .astro_simulator import AstronomicalSimulator
+    from .astro_simulator import AstronomicalSimulator, FITSReader
+    from .interactive_telescope import (
+        InteractiveTelescopeSimulator,
+        ObservationParameters,
+        TelescopeParameters,
+    )
 except ImportError:
     AstronomicalSimulator = None
+    FITSReader = None
+    InteractiveTelescopeSimulator = None
+    TelescopeParameters = None
+    ObservationParameters = None
 
 try:
     # Import commonly used functions from formula_cal
@@ -95,10 +104,10 @@ try:
 except ImportError:
     TerrainGenerator = None
 
-try:
-    from .zen_fractal import ZenFractal
-except ImportError:
-    ZenFractal = None
+# try:
+#     from .zen_fractal import ZenFractal
+# except ImportError:
+#     ZenFractal = None
 
 # Import element_data for chemical data
 try:
@@ -110,6 +119,10 @@ except ImportError:
 __all__ = [
     # Core modules
     "AstronomicalSimulator",
+    "FITSReader",  # 新增：FITS文件读取器
+    "InteractiveTelescopeSimulator",  # 新增：交互式望远镜模拟器
+    "TelescopeParameters",  # 新增：望远镜参数类
+    "ObservationParameters",  # 新增：观测参数类
     "SpacetimeEvent",
     "relativistic_velocity_addition",
     "EquationSolver",
@@ -126,7 +139,6 @@ __all__ = [
     "standardize_formula",
     "is_chemical_formula_valid",
     "TerrainGenerator",
-    "ZenFractal",
     "element_data",
 ]
 
