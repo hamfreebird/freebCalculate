@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "freebirdcal"
-version = "0.1.2"
+version = "0.1.3"
 description = "A comprehensive scientific calculation library with astronomy, physics, chemistry, terrain generation and video processing capabilities"
 readme = "readme.md"
 license = "GPL-3.0-or-later"
@@ -50,6 +50,9 @@ dependencies = [
 [project.optional-dependencies]
 astronomy = [
     "astropy>=5.0",
+    "pandas>=3.0",
+    "sqlalchemy>=2.0",
+
 ]
 geospatial = [
     "scikit-image>=0.18.0",
@@ -85,6 +88,8 @@ full = [
     "noise>=1.2.0",
     "pillow>=9.0.0",
     "landlab>=2.3.0",
+    "pandas>=3.0",
+    "sqlalchemy>=2.0",
 ]
 
 [project.urls]

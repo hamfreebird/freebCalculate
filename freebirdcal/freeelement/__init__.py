@@ -8,7 +8,7 @@ This subpackage provides tools for:
 - Chemical formula parsing and analysis
 """
 
-__version__ = "0.1.1"
+__version__ = "0.1.3"
 __author__ = "freebird"
 __license__ = "GPLv3"
 

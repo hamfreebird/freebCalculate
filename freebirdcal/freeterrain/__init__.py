@@ -9,7 +9,7 @@ This subpackage provides tools for:
 - Elevation data analysis and contour extraction from raster data
 """
 
-__version__ = "0.1.2"
+__version__ = "0.1.3"
 __author__ = "freebird"
 __license__ = "GPLv3"
 

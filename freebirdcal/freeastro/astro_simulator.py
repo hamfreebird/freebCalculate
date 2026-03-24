@@ -841,7 +841,7 @@ class FITSReader:
 
         return info
 
-    def get_header_summary(self, max_keys: int = 20) -> List[Tuple[str, str, str]]:
+    def get_header_summary(self, max_keys: int = 200) -> List[Tuple[str, str, str]]:
         """
         获取头部信息摘要
 
@@ -868,7 +868,7 @@ class FITSReader:
 
         return summary
 
-    def get_catalog_summary(self, max_rows: int = 10) -> Optional[Table]:
+    def get_catalog_summary(self, max_rows: int = 1000) -> Optional[Table]:
         """
         获取星表摘要
 
@@ -1175,6 +1175,385 @@ class FITSReader:
             logger.error("绘制星表需要matplotlib库。请安装: pip install matplotlib")
         except Exception as e:
             logger.error(f"绘制星表失败: {e}")
+
+    def export_catalog(
+        self,
+        output_path: str,
+        format: str = "csv",
+        include_header: bool = True,
+        delimiter: str = ",",
+        database_table: str = "stars",
+        **kwargs,
+    ):
+        """
+        导出星表数据到文件或数据库
+
+        支持格式：
+        - txt: 文本文件（可指定分隔符）
+        - csv: CSV文件（逗号分隔）
+        - json: JSON格式
+        - sql: SQL脚本文件
+        - sqlite: SQLite数据库
+        - postgresql: PostgreSQL数据库（需要sqlalchemy和psycopg2）
+        - mysql: MySQL数据库（需要sqlalchemy和mysql-connector）
+
+        参数：
+        output_path : str
+            输出文件路径或数据库连接字符串
+        format : str
+            输出格式：'txt', 'csv', 'json', 'sqlite', 'postgresql', 'mysql'
+        include_header : bool
+            对于文本/CSV文件，是否包含表头
+        delimiter : str
+            对于文本/CSV文件，列分隔符
+        database_table : str
+            对于数据库格式，表名
+        **kwargs : dict
+            其他格式特定参数
+
+        异常：
+        ValueError: 当星表数据不存在时
+        IOError: 当写入文件失败时
+        ImportError: 当缺少必要的依赖库时
+        """
+        if self.catalog_data is None:
+            raise ValueError("没有星表数据可导出")
+
+        format_lower = format.lower()
+
+        try:
+            if format_lower in ["txt", "csv"]:
+                self._export_to_text(output_path, include_header, delimiter)
+                logger.info(f"星表已导出为{format.upper()}文件: {output_path}")
+
+            elif format_lower == "json":
+                self._export_to_json(output_path)
+                logger.info(f"星表已导出为JSON文件: {output_path}")
+
+            elif format_lower == "sql":
+                self._export_to_sql(output_path, database_table, **kwargs)
+                logger.info(f"星表已导出为SQL文件: {output_path}")
+
+            elif format_lower == "sqlite":
+                self._export_to_sqlite(output_path, database_table, **kwargs)
+                logger.info(
+                    f"星表已导出到SQLite数据库: {output_path}, 表: {database_table}"
+                )
+
+            elif format_lower in ["postgresql", "mysql"]:
+                self._export_to_database(
+                    output_path, format_lower, database_table, **kwargs
+                )
+                logger.info(
+                    f"星表已导出到{format}数据库: {output_path}, 表: {database_table}"
+                )
+
+            else:
+                raise ValueError(f"不支持的格式: {format}")
+
+        except Exception as e:
+            raise IOError(f"导出星表失败: {e}")
+
+    def _export_to_text(self, output_path: str, include_header: bool, delimiter: str):
+        """导出为文本或CSV文件"""
+        if self.catalog_data is None:
+            raise ValueError("没有星表数据可导出")
+        try:
+            # 使用astropy Table直接写入，避免pandas依赖
+            if delimiter == ",":
+                # 使用CSV格式
+                self.catalog_data.write(
+                    output_path,
+                    format="ascii.csv",
+                    overwrite=True,
+                    include_names=self.catalog_data.colnames if include_header else [],
+                )
+            elif delimiter == "\t":
+                # 使用制表符分隔格式
+                self.catalog_data.write(
+                    output_path,
+                    format="ascii.tab",
+                    overwrite=True,
+                    names=self.catalog_data.colnames if include_header else [],
+                )
+            elif delimiter == " ":
+                # 使用空格分隔格式
+                self.catalog_data.write(
+                    output_path,
+                    format="ascii.basic",
+                    overwrite=True,
+                    names=self.catalog_data.colnames if include_header else [],
+                )
+            else:
+                # 对于自定义分隔符，使用基本格式
+                self.catalog_data.write(
+                    output_path,
+                    format="ascii.basic",
+                    overwrite=True,
+                    delimiter=delimiter,
+                    names=self.catalog_data.colnames if include_header else [],
+                )
+
+        except Exception as e:
+            raise IOError(f"写入文本文件失败: {e}")
+
+    def _export_to_json(self, output_path: str):
+        """导出为JSON文件"""
+        if self.catalog_data is None:
+            raise ValueError("没有星表数据可导出")
+        try:
+            # 首先尝试使用astropy Table的write方法
+            self.catalog_data.write(output_path, format="ascii.json", overwrite=True)
+        except Exception:
+            # 如果astropy失败，尝试使用pandas作为备选方案
+            try:
+                import json
+
+                import pandas as pd
+
+                df = self.catalog_data.to_pandas()
+                # 转换为字典列表
+                records = df.to_dict(orient="records")
+                with open(output_path, "w", encoding="utf-8") as f:
+                    json.dump(records, f, indent=2, ensure_ascii=False, default=str)
+            except ImportError:
+                raise ImportError("导出到JSON需要astropy或pandas库")
+            except Exception as e:
+                raise IOError(f"写入JSON文件失败: {e}")
+
+    def _export_to_sqlite(self, output_path: str, table_name: str, **kwargs):
+        """导出到SQLite数据库"""
+        if self.catalog_data is None:
+            raise ValueError("没有星表数据可导出")
+        try:
+            import sqlite3
+
+            # 首先尝试使用astropy Table直接处理（避免pandas依赖）
+            # 获取表数据
+            table = self.catalog_data
+
+            # 连接到SQLite数据库
+            conn = sqlite3.connect(output_path)
+            cursor = conn.cursor()
+
+            # 获取if_exists参数
+            if_exists = kwargs.get("if_exists", "replace")
+
+            # 检查表是否存在
+            cursor.execute(
+                f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table_name}'"
+            )
+            table_exists = cursor.fetchone() is not None
+
+            # 处理表存在的情况
+            if table_exists:
+                if if_exists == "replace":
+                    cursor.execute(f"DROP TABLE {table_name}")
+                elif if_exists == "fail":
+                    raise ValueError(f"表已存在: {table_name}")
+                # 对于if_exists == "append"，直接继续
+
+            # 创建表（如果不存在或被删除）
+            if not table_exists or if_exists == "replace":
+                # 构建列定义
+                column_defs = []
+                for colname in table.colnames:
+                    col = table[colname]
+                    # 根据数据类型确定SQLite类型
+                    if hasattr(col, "dtype"):
+                        if "float" in str(col.dtype):
+                            col_type = "REAL"
+                        elif "int" in str(col.dtype):
+                            col_type = "INTEGER"
+                        else:
+                            col_type = "TEXT"
+                    else:
+                        col_type = "TEXT"
+                    column_defs.append(f"{colname} {col_type}")
+
+                create_sql = f"CREATE TABLE {table_name} ({', '.join(column_defs)})"
+                cursor.execute(create_sql)
+
+            # 准备插入数据的SQL
+            colnames_str = ", ".join(table.colnames)
+            placeholders = ", ".join(["?" for _ in table.colnames])
+            insert_sql = (
+                f"INSERT INTO {table_name} ({colnames_str}) VALUES ({placeholders})"
+            )
+
+            # 插入数据行
+            for row in table:
+                row_data = []
+                for colname in table.colnames:
+                    val = row[colname]
+                    # 处理特殊值
+                    if val is None or (hasattr(val, "mask") and val.mask):
+                        row_data.append(None)
+                    else:
+                        # 转换numpy类型为Python类型
+                        if hasattr(val, "item"):
+                            row_data.append(val.item())
+                        else:
+                            row_data.append(val)
+                cursor.execute(insert_sql, row_data)
+
+            conn.commit()
+            conn.close()
+
+        except ImportError:
+            # 如果缺少sqlite3，尝试使用pandas作为备选方案
+            try:
+                import sqlite3
+
+                import pandas as pd
+
+                df = self.catalog_data.to_pandas()
+
+                # 连接到SQLite数据库
+                conn = sqlite3.connect(output_path)
+                df.to_sql(
+                    table_name,
+                    conn,
+                    if_exists=kwargs.get("if_exists", "replace"),
+                    index=False,
+                )
+                conn.close()
+            except ImportError as e:
+                raise ImportError(f"导出到SQLite需要sqlite3库（或pandas）: {e}")
+        except Exception as e:
+            raise IOError(f"导出到SQLite数据库失败: {e}")
+
+    def _export_to_database(
+        self, connection_string: str, db_type: str, table_name: str, **kwargs
+    ):
+        """导出到PostgreSQL或MySQL数据库"""
+        if self.catalog_data is None:
+            raise ValueError("没有星表数据可导出")
+        try:
+            import pandas as pd
+            from sqlalchemy import create_engine
+
+            # 根据数据库类型调整连接字符串
+            if db_type == "postgresql":
+                if not connection_string.startswith("postgresql://"):
+                    connection_string = f"postgresql://{connection_string}"
+            elif db_type == "mysql":
+                if not connection_string.startswith("mysql://"):
+                    connection_string = f"mysql://{connection_string}"
+
+            # 创建数据库引擎
+            engine = create_engine(connection_string)
+
+            # 转换为DataFrame并写入数据库
+            df = self.catalog_data.to_pandas()
+            df.to_sql(
+                table_name,
+                engine,
+                if_exists=kwargs.get("if_exists", "replace"),
+                index=False,
+                dtype=kwargs.get("dtype"),
+            )
+
+        except ImportError as e:
+            raise ImportError(f"导出到数据库需要pandas和sqlalchemy库: {e}")
+        except Exception as e:
+            raise IOError(f"数据库写入失败: {e}")
+
+    def _export_to_sql(self, output_path: str, table_name: str, **kwargs):
+        """导出为SQL脚本文件"""
+        try:
+            if self.catalog_data is None:
+                raise ValueError("没有星表数据可导出")
+
+            # 获取表数据
+            table = self.catalog_data
+
+            # 获取if_exists参数
+            if_exists = kwargs.get("if_exists", "replace")
+
+            with open(output_path, "w", encoding="utf-8") as f:
+                # 写入SQL注释头
+                f.write(f"-- SQL script generated from FITS catalog\n")
+                f.write(f"-- Table: {table_name}\n")
+                f.write(f"-- Rows: {len(table)}\n")
+                f.write(f"-- Generated at: {datetime.datetime.now().isoformat()}\n")
+                f.write("\n")
+
+                # 构建列定义
+                column_defs = []
+                for colname in table.colnames:
+                    col = table[colname]
+                    # 根据数据类型确定SQL类型
+                    if hasattr(col, "dtype"):
+                        dtype_str = str(col.dtype)
+                        if "float" in dtype_str:
+                            col_type = "REAL"
+                        elif "int" in dtype_str:
+                            col_type = "INTEGER"
+                        elif "bool" in dtype_str:
+                            col_type = "BOOLEAN"
+                        else:
+                            col_type = "TEXT"
+                    else:
+                        col_type = "TEXT"
+                    column_defs.append(f"{colname} {col_type}")
+
+                # 创建表语句
+                if if_exists == "replace":
+                    f.write(f"DROP TABLE IF EXISTS {table_name};\n")
+                elif if_exists == "fail":
+                    f.write(f"-- WARNING: Table {table_name} may already exist\n")
+
+                f.write(f"CREATE TABLE {table_name} (\n")
+                f.write("    " + ",\n    ".join(column_defs) + "\n")
+                f.write(");\n\n")
+
+                # 插入数据
+                if len(table) > 0:
+                    f.write(f"-- Insert {len(table)} rows\n")
+
+                    # 准备插入数据的SQL
+                    colnames_str = ", ".join(table.colnames)
+
+                    for i, row in enumerate(table):
+                        # 构建值列表
+                        values = []
+                        for colname in table.colnames:
+                            val = row[colname]
+                            # 处理特殊值
+                            if val is None or (hasattr(val, "mask") and val.mask):
+                                values.append("NULL")
+                            else:
+                                # 转换numpy类型为Python类型并转义
+                                if hasattr(val, "item"):
+                                    pyval = val.item()
+                                else:
+                                    pyval = val
+
+                                # 根据类型处理
+                                if isinstance(pyval, (int, float, bool)):
+                                    values.append(str(pyval))
+                                else:
+                                    # 字符串需要转义和引号
+                                    strval = str(pyval).replace("'", "''")
+                                    values.append(f"'{strval}'")
+
+                        values_str = ", ".join(values)
+
+                        if i == 0:
+                            f.write(
+                                f"INSERT INTO {table_name} ({colnames_str}) VALUES\n"
+                            )
+                            f.write(f"    ({values_str})")
+                        else:
+                            f.write(f",\n    ({values_str})")
+
+                    f.write(";\n\n")
+
+                f.write("-- End of SQL script\n")
+
+        except Exception as e:
+            raise IOError(f"写入SQL文件失败: {e}")
 
     def get_statistics(self) -> Dict[str, Any]:
         """
@@ -2408,15 +2787,15 @@ if __name__ == "__main__":
 
         # 生成PSF核（Moffat分布，带椭圆）
         psf = sim.generate_psf(
-            fwhm=3.0, profile="moffat", beta=3.5, ellipticity=0.2, position_angle=45.0
+            fwhm=5.0, profile="moffat", beta=3.5, ellipticity=0.8, position_angle=45.0
         )
 
         # 生成图像（包含更多噪声成分）
         image = sim.generate_image(
             stars=stars,
             psf_kernel=psf,
-            sky_brightness=20.5,
-            read_noise=3.0,
+            sky_brightness=24.5,
+            read_noise=1.0,
             dark_current=0.05,
             include_cosmic_rays=True,
             cosmic_ray_rate=0.0005,
@@ -2443,26 +2822,29 @@ if __name__ == "__main__":
         print(f"图像统计: 均值={image.mean():.2f} ADU, 标准差={image.std():.2f} ADU")
         print("文件已保存: simulated_observation_optimized.fits")
 
-        with FITSReader('simulated_observation_optimized.fits') as reader:
+        with FITSReader("simulated_observation_optimized.fits") as reader:
             # 自定义显示参数
             reader.display_image(
                 figsize=(14, 12),
-                stretch='asinh',  # 使用反双曲正弦拉伸，适合深场图像
+                stretch="asinh",  # 使用反双曲正弦拉伸，适合深场图像
                 percentile=99.9,  # 使用99.9%百分位作为显示上限
-                title='Deep field astronomical image',
-                show_colorbar=True
+                title="Deep field astronomical image",
+                show_colorbar=True,
             )
 
-            # 如果有星表，绘制高级星表图
+            # 如果有星表，绘制高级星表图，并导出文件
             if reader.catalog_data is not None:
                 reader.plot_catalog(
-                    x_col='RA',  # 使用赤经坐标
-                    y_col='DEC',  # 使用赤纬坐标
-                    mag_col='MAG',
+                    x_col="RA",  # 使用赤经坐标
+                    y_col="DEC",  # 使用赤纬坐标
+                    mag_col="MAG",
                     show_image=False,  # 不显示背景图像
-                    title='Star table distribution (celestial coordinates)',
-                    figsize=(12, 10)
+                    title="Star table distribution (celestial coordinates)",
+                    figsize=(12, 10),
                 )
+
+                # 导出为CSV文件（默认）
+                reader.export_catalog("catalog.csv", format="csv")
 
     except Exception as e:
         logger.error(f"模拟失败: {e}")

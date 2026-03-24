@@ -14,7 +14,7 @@ FreebirdCal provides tools for:
 - Fractal visualization
 """
 
-__version__ = "0.1.2"
+__version__ = "0.1.3"
 __author__ = "freebird"
 __license__ = "GPLv3"
 

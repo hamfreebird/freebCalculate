@@ -8,6 +8,7 @@
 ```base
 numpy astropy scipy matplotlib mpmath scikit-image geopandas shapely
 opencv-contrib-python openvino pubchempy rdkit noise pillow landlab
+pandas sqlalchemy
 ```
 注意，不是所有功能都需要第三方库，可以按需下载，哪些功能需要第三方库详见下表。
 
@@ -17,7 +18,7 @@ opencv-contrib-python openvino pubchempy rdkit noise pillow landlab
 
 | 名称                      | 用途        | 依赖                                                    |
 |-------------------------|-----------|-------------------------------------------------------|
-| astro_simulator.py      | 星图生成      | numpy astropy scipy                                   |
+| astro_simulator.py      | 星图生成      | numpy astropy scipy pandas sqlalchemy                 |
 | spacetime_event.py      | 光锥计算      | 无                                                     |
 | formula_cal.py          | 常用公式计算    | numpy scipy mpmath matplotlib                         |
 | equation_solver.py      | 求解方程*     | 无                                                     |
