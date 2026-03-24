@@ -6,13 +6,13 @@ This script helps with building, testing, and uploading the freebirdcal package.
 It provides an interactive menu for common packaging tasks.
 
 Usage:
-    python build.py                     # Interactive menu
-    python build.py --build             # Just build the package
-    python build.py --clean             # Just clean build files
-    python build.py --install           # Build and install locally
-    python build.py --upload            # Build and upload to PyPI
-    python build.py --test-pypi         # Build and upload to TestPyPI
-    python build.py --all               # Full build and test cycle
+    python build_helper.py                     # Interactive menu
+    python build_helper.py --build             # Just build the package
+    python build_helper.py --clean             # Just clean build files
+    python build_helper.py --install           # Build and install locally
+    python build_helper.py --upload            # Build and upload to PyPI
+    python build_helper.py --test-pypi         # Build and upload to TestPyPI
+    python build_helper.py --all               # Full build and test cycle
 """
 
 import argparse

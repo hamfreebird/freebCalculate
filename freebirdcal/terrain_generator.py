@@ -4,26 +4,29 @@
 支持构造抬升、河流侵蚀、山坡扩散、微观细节，并输出高度图(RAW)和纹理权重图(Splatmap)。
 """
 
-import numpy as np
-import matplotlib.pyplot as plt
-from scipy.spatial import cKDTree
-from noise import snoise2, pnoise2
-from PIL import Image
 import warnings
+
+import matplotlib.pyplot as plt
+import numpy as np
+from noise import pnoise2, snoise2
+from PIL import Image
+from scipy.spatial import cKDTree
 
 # 检查 Landlab 可用性
 try:
     from landlab import RasterModelGrid
     from landlab.components import (
-        FlowAccumulator,
-        StreamPowerEroder,
         DepressionFinderAndRouter,
+        FlowAccumulator,
         LinearDiffuser,
+        StreamPowerEroder,
     )
+
     LANDLAB_AVAILABLE = True
 except ImportError:
     LANDLAB_AVAILABLE = False
     warnings.warn("Landlab 未安装，将无法进行侵蚀模拟。请安装: pip install landlab")
+
 
 class TerrainGenerator:
     """
@@ -41,12 +44,12 @@ class TerrainGenerator:
         self.nx, self.ny = shape
         self.dx = dx
         self.seed = seed
-        self.initial_z = None      # 初始地形
-        self.uplift_field = None    # 构造抬升场
-        self.eroded_z = None        # 侵蚀后地形
-        self.final_z = None          # 最终地形（含微观细节）
-        self.rivers_mask = None      # 河流掩膜
-        self.splatmap = None         # 纹理权重图
+        self.initial_z = None  # 初始地形
+        self.uplift_field = None  # 构造抬升场
+        self.eroded_z = None  # 侵蚀后地形
+        self.final_z = None  # 最终地形（含微观细节）
+        self.rivers_mask = None  # 河流掩膜
+        self.splatmap = None  # 纹理权重图
 
     def generate_tectonic_field(self):
         """
@@ -70,7 +73,13 @@ class TerrainGenerator:
         # 叠加分形噪声使过渡更自然
         for i in range(nx):
             for j in range(ny):
-                val = pnoise2(i / nx * 2.0, j / ny * 2.0, octaves=2, persistence=0.5, base=self.seed)
+                val = pnoise2(
+                    i / nx * 2.0,
+                    j / ny * 2.0,
+                    octaves=2,
+                    persistence=0.5,
+                    base=self.seed,
+                )
                 uplift_field[i, j] += 0.0005 * (val + 1) / 2
         self.uplift_field = uplift_field
         return self.uplift_field
@@ -114,10 +123,10 @@ class TerrainGenerator:
 
         # 初始化高程场（注意 Landlab 的索引顺序）
         z_init = self.initial_z.T.flatten()
-        grid.add_field('topographic__elevation', z_init, at='node')
+        grid.add_field("topographic__elevation", z_init, at="node")
 
         # 组件初始化
-        fa = FlowAccumulator(grid, flow_director='D8')
+        fa = FlowAccumulator(grid, flow_director="D8")
         sp = StreamPowerEroder(grid, K_sp=0.0001, m_sp=0.5, n_sp=1.0)
         diffuser = LinearDiffuser(grid, linear_diffusivity=0.005)
         dep_finder = DepressionFinderAndRouter(grid)
@@ -126,7 +135,7 @@ class TerrainGenerator:
         for step in range(n_steps):
             # 构造抬升（空间变化）
             uplift_array = self.uplift_field.T.flatten() * dt
-            grid.at_node['topographic__elevation'] += uplift_array
+            grid.at_node["topographic__elevation"] += uplift_array
 
             # 水文计算
             fa.run_one_step()
@@ -140,9 +149,11 @@ class TerrainGenerator:
             diffuser.run_one_step(dt)
 
             if step % output_interval == 0:
-                print(f"步骤 {step}/{n_steps}, 最大高程: {grid.at_node['topographic__elevation'].max():.2f} m")
+                print(
+                    f"步骤 {step}/{n_steps}, 最大高程: {grid.at_node['topographic__elevation'].max():.2f} m"
+                )
 
-        self.eroded_z = grid.at_node['topographic__elevation'].reshape((nx, ny)).T
+        self.eroded_z = grid.at_node["topographic__elevation"].reshape((nx, ny)).T
         return self.eroded_z
 
     def add_micro_details(self, amplitude=30, scale=80):
@@ -157,7 +168,14 @@ class TerrainGenerator:
         micro = np.zeros((nx, ny))
         for i in range(nx):
             for j in range(ny):
-                micro[i, j] = pnoise2(i / scale, j / scale, octaves=4, persistence=0.5, lacunarity=2.0, base=self.seed+100)
+                micro[i, j] = pnoise2(
+                    i / scale,
+                    j / scale,
+                    octaves=4,
+                    persistence=0.5,
+                    lacunarity=2.0,
+                    base=self.seed + 100,
+                )
         micro = (micro - micro.min()) / (micro.max() - micro.min()) * 2 - 1
         z_detail = z + amplitude * micro
         self.final_z = np.clip(z_detail, 0, None)
@@ -173,18 +191,19 @@ class TerrainGenerator:
             warnings.warn("Landlab 未安装，无法精确提取河流，使用高程阈值替代。")
             # 备用：低洼区域作为河流（粗略）
             from scipy.ndimage import gaussian_filter, minimum_filter
+
             z_smooth = gaussian_filter(self.final_z, sigma=5.0)
-            local_min = (z_smooth == minimum_filter(z_smooth, size=10))
+            local_min = z_smooth == minimum_filter(z_smooth, size=10)
             self.rivers_mask = local_min
             return self.rivers_mask
 
         nx, ny = self.nx, self.ny
         dx = self.dx
         grid = RasterModelGrid((ny, nx), xy_spacing=dx)
-        grid.add_field('topographic__elevation', self.final_z.T.flatten(), at='node')
-        fa = FlowAccumulator(grid, flow_director='D8')
+        grid.add_field("topographic__elevation", self.final_z.T.flatten(), at="node")
+        fa = FlowAccumulator(grid, flow_director="D8")
         fa.run_one_step()
-        area = grid.at_node['drainage_area'].reshape((nx, ny)).T  # 单位 m²
+        area = grid.at_node["drainage_area"].reshape((nx, ny)).T  # 单位 m²
         self.rivers_mask = area > threshold_m2
         return self.rivers_mask
 
@@ -225,22 +244,23 @@ class TerrainGenerator:
                 s = slope[i, j]
 
                 if e < 1500 and s < 30:
-                    splat[i, j, 0] = 1.0   # 草地
+                    splat[i, j, 0] = 1.0  # 草地
                 elif 1500 <= e < 3500 and s < 45:
-                    splat[i, j, 1] = 1.0   # 岩石
+                    splat[i, j, 1] = 1.0  # 岩石
                 elif e >= 3500:
-                    splat[i, j, 2] = 1.0   # 雪地
+                    splat[i, j, 2] = 1.0  # 雪地
                 else:
-                    splat[i, j, 1] = 1.0   # 默认岩石
+                    splat[i, j, 1] = 1.0  # 默认岩石
 
                 # 河流覆盖
                 if rivers_mask is not None and rivers_mask[i, j]:
                     splat[i, j, :] = 0.0
-                    splat[i, j, 3] = 1.0   # 河流/沙地
+                    splat[i, j, 3] = 1.0  # 河流/沙地
 
         # 平滑过渡
         try:
             from scipy.ndimage import gaussian_filter
+
             for ch in range(4):
                 splat[:, :, ch] = gaussian_filter(splat[:, :, ch], sigma=2.0)
         except ImportError:
@@ -248,7 +268,9 @@ class TerrainGenerator:
 
         # 归一化权重
         row_sums = splat.sum(axis=2, keepdims=True)
-        splat = np.divide(splat, row_sums, out=np.zeros_like(splat), where=row_sums != 0)
+        splat = np.divide(
+            splat, row_sums, out=np.zeros_like(splat), where=row_sums != 0
+        )
 
         self.splatmap = splat
         return self.splatmap
@@ -272,7 +294,7 @@ class TerrainGenerator:
         if self.splatmap is None:
             raise ValueError("splatmap 尚未生成，请先调用 generate_splatmap()。")
         splat_uint8 = (self.splatmap * 255).astype(np.uint8)
-        img = Image.fromarray(splat_uint8, mode='RGBA')
+        img = Image.fromarray(splat_uint8, mode="RGBA")
         img.save(filename)
 
     def visualize(self, save_plots=False, prefix="terrain"):
@@ -286,34 +308,36 @@ class TerrainGenerator:
 
         fig, axes = plt.subplots(2, 3, figsize=(15, 10))
         # 初始地形
-        im1 = axes[0,0].imshow(self.initial_z, cmap='terrain')
-        axes[0,0].set_title('Initial Topography')
-        plt.colorbar(im1, ax=axes[0,0], label='Elevation (m)')
+        im1 = axes[0, 0].imshow(self.initial_z, cmap="terrain")
+        axes[0, 0].set_title("Initial Topography")
+        plt.colorbar(im1, ax=axes[0, 0], label="Elevation (m)")
         # 侵蚀后（如果有）
         if self.eroded_z is not None:
-            im2 = axes[0,1].imshow(self.eroded_z, cmap='terrain')
-            axes[0,1].set_title('After Erosion')
-            plt.colorbar(im2, ax=axes[0,1], label='Elevation (m)')
+            im2 = axes[0, 1].imshow(self.eroded_z, cmap="terrain")
+            axes[0, 1].set_title("After Erosion")
+            plt.colorbar(im2, ax=axes[0, 1], label="Elevation (m)")
         # 最终地形
-        im3 = axes[0,2].imshow(self.final_z, cmap='terrain')
-        axes[0,2].set_title('Final (with details)')
-        plt.colorbar(im3, ax=axes[0,2], label='Elevation (m)')
+        im3 = axes[0, 2].imshow(self.final_z, cmap="terrain")
+        axes[0, 2].set_title("Final (with details)")
+        plt.colorbar(im3, ax=axes[0, 2], label="Elevation (m)")
         # 坡度图
         slope = self.compute_slope()
-        im4 = axes[1,0].imshow(slope, cmap='viridis', vmax=60)
-        axes[1,0].set_title('Slope (deg)')
-        plt.colorbar(im4, ax=axes[1,0])
+        im4 = axes[1, 0].imshow(slope, cmap="viridis", vmax=60)
+        axes[1, 0].set_title("Slope (deg)")
+        plt.colorbar(im4, ax=axes[1, 0])
         # 河流掩膜
         if self.rivers_mask is not None:
-            im5 = axes[1,1].imshow(self.rivers_mask, cmap='Blues', interpolation='nearest')
-            axes[1,1].set_title('River Network')
-            plt.colorbar(im5, ax=axes[1,1])
+            im5 = axes[1, 1].imshow(
+                self.rivers_mask, cmap="Blues", interpolation="nearest"
+            )
+            axes[1, 1].set_title("River Network")
+            plt.colorbar(im5, ax=axes[1, 1])
         # Splatmap 简示（只显示RGB）
         if self.splatmap is not None:
             rgb = self.splatmap[:, :, :3]
-            im6 = axes[1,2].imshow(rgb)
-            axes[1,2].set_title('Splatmap (RGB)')
-            plt.colorbar(im6, ax=axes[1,2])
+            im6 = axes[1, 2].imshow(rgb)
+            axes[1, 2].set_title("Splatmap (RGB)")
+            plt.colorbar(im6, ax=axes[1, 2])
 
         plt.tight_layout()
         if save_plots:
@@ -322,10 +346,16 @@ class TerrainGenerator:
         else:
             plt.show()
 
-    def run_full_pipeline(self, total_time=300000, dt=100,
-                          micro_amplitude=30, micro_scale=80,
-                          river_threshold=500000, save_plots=True,
-                          out_prefix="terrain"):
+    def run_full_pipeline(
+        self,
+        total_time=300000,
+        dt=100,
+        micro_amplitude=30,
+        micro_scale=80,
+        river_threshold=500000,
+        save_plots=True,
+        out_prefix="terrain",
+    ):
         """
         执行完整的地形生成流程
         """
@@ -344,7 +374,7 @@ class TerrainGenerator:
         # 3. 运行侵蚀模拟
         print("[3/6] 运行水力侵蚀模拟（可能需要几分钟）...")
         if LANDLAB_AVAILABLE:
-            self.run_erosion(total_time=total_time, dt=dt)
+            self.run_erosion(total_time=total_time, dt=dt, output_interval=50)
         else:
             warnings.warn("Landlab 不可用，跳过侵蚀模拟，直接使用初始地形。")
             self.eroded_z = self.initial_z.copy()
@@ -384,12 +414,11 @@ if __name__ == "__main__":
 
     # 运行完整流程
     generator.run_full_pipeline(
-        total_time=300000,          # 总模拟时间（年）
-        dt=100,                     # 时间步长（年）
-        micro_amplitude=30,         # 微观细节振幅（米）
-        micro_scale=80,             # 微观细节尺度
-        river_threshold=500000,     # 河流阈值（平方米）
-        save_plots=True,            # 保存可视化图片
-        out_prefix="terrain"        # 输出文件名前缀
+        total_time=100000,  # 总模拟时间（年）
+        dt=10,  # 时间步长（年）
+        micro_amplitude=5,  # 微观细节振幅（米）
+        micro_scale=20,  # 微观细节尺度
+        river_threshold=10000,  # 河流阈值（平方米）
+        save_plots=True,  # 保存可视化图片
+        out_prefix="terrain",  # 输出文件名前缀
     )
-

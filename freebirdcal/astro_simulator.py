@@ -8,6 +8,7 @@ from astropy.convolution import convolve, convolve_fft
 from astropy.io import fits
 from astropy.table import Table
 from astropy.wcs import WCS
+from matplotlib import pyplot as plt
 
 logger = logging.getLogger(__name__)
 
@@ -2385,7 +2386,7 @@ if __name__ == "__main__":
     try:
         # 初始化模拟器（使用更多参数）
         sim = AstronomicalSimulator(
-            image_size=2048,
+            image_size=4096,
             pixel_scale=0.3,
             zeropoint=25.0,
             gain=2.0,
@@ -2397,7 +2398,7 @@ if __name__ == "__main__":
 
         # 生成恒星参数（使用幂律分布）
         stars = sim.generate_stars(
-            num_stars=5000,
+            num_stars=20000,
             min_mag=18,
             max_mag=26,
             distribution="clustered",
@@ -2441,6 +2442,27 @@ if __name__ == "__main__":
         print(f"图像尺寸: {image.shape}")
         print(f"图像统计: 均值={image.mean():.2f} ADU, 标准差={image.std():.2f} ADU")
         print("文件已保存: simulated_observation_optimized.fits")
+
+        with FITSReader('simulated_observation_optimized.fits') as reader:
+            # 自定义显示参数
+            reader.display_image(
+                figsize=(14, 12),
+                stretch='asinh',  # 使用反双曲正弦拉伸，适合深场图像
+                percentile=99.9,  # 使用99.9%百分位作为显示上限
+                title='Deep field astronomical image',
+                show_colorbar=True
+            )
+
+            # 如果有星表，绘制高级星表图
+            if reader.catalog_data is not None:
+                reader.plot_catalog(
+                    x_col='RA',  # 使用赤经坐标
+                    y_col='DEC',  # 使用赤纬坐标
+                    mag_col='MAG',
+                    show_image=False,  # 不显示背景图像
+                    title='Star table distribution (celestial coordinates)',
+                    figsize=(12, 10)
+                )
 
     except Exception as e:
         logger.error(f"模拟失败: {e}")
