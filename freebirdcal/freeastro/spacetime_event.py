@@ -13,24 +13,51 @@ def decompose_velocity(speed: float, angle_deg: float) -> tuple[float, float]:
         (vx, vy): 速度分量元组
     """
     theta = math.radians(angle_deg)
-    return (
-        speed * math.cos(theta),
-        speed * math.sin(theta)
-    )
+    return (speed * math.cos(theta), speed * math.sin(theta))
 
 
-def relativistic_velocity_addition(vx: float, vy: float, ux: float, uy: float, c: float = 1.0) -> tuple[float, float]:
+def relativistic_velocity_addition(
+    vx: float, vy: float, ux: float, uy: float, c: float = 1.0
+) -> tuple[float, float]:
     """
     计算相对论速度叠加（ux和uy是在速度v参考系中观测的速度）
 
     返回:
         (wx, wy): 原参考系中的合成速度分量
     """
-    gamma = 1 / math.sqrt(1 - (vx ** 2 + vy ** 2) / c ** 2)
-    denominator = 1 + (vx * ux + vy * uy) / c ** 2
+    # 如果参考系速度为零，直接返回原速度
+    v_sq = vx**2 + vy**2
+    if v_sq == 0:
+        return ux, uy
 
-    wx = (ux + vx + (gamma - 1) * (vx * (ux ** 2 + uy ** 2) / (vx ** 2 + vy ** 2))) / denominator
-    wy = (uy + vy + (gamma - 1) * (vy * (ux ** 2 + uy ** 2) / (vx ** 2 + vy ** 2))) / denominator
+    # 计算相对论因子和速度大小
+    gamma = 1 / math.sqrt(1 - v_sq / c**2)
+    v_mag = math.sqrt(v_sq)
+
+    # 单位速度矢量
+    v_unit_x = vx / v_mag
+    v_unit_y = vy / v_mag
+
+    # 将u分解为平行和垂直于v的分量
+    u_parallel = ux * v_unit_x + uy * v_unit_y  # 平行分量大小
+    u_perp_x = ux - u_parallel * v_unit_x  # 垂直分量x
+    u_perp_y = uy - u_parallel * v_unit_y  # 垂直分量y
+
+    # 相对论速度叠加公式
+    denominator = 1 + v_mag * u_parallel / c**2
+
+    # 变换后的平行分量
+    u_parallel_transformed = (u_parallel + v_mag) / denominator
+
+    # 变换后的垂直分量
+    scale = 1 / (gamma * denominator)
+    u_perp_x_transformed = u_perp_x * scale
+    u_perp_y_transformed = u_perp_y * scale
+
+    # 合成速度
+    wx = u_parallel_transformed * v_unit_x + u_perp_x_transformed
+    wy = u_parallel_transformed * v_unit_y + u_perp_y_transformed
+
     return wx, wy
 
 
@@ -51,16 +78,16 @@ class SpacetimeEvent:
         self.t = t
         self.c = c
 
-    def interval_to(self, other: 'SpacetimeEvent') -> float:
+    def interval_to(self, other: "SpacetimeEvent") -> float:
         """
         计算与另一事件的时空间隔平方 \(s^2 = \Delta x^2 + \Delta y^2 - c^2 \Delta t^2\)。
         """
         dx = other.x - self.x
         dy = other.y - self.y
         dt = other.t - self.t
-        return dx ** 2 + dy ** 2 - (self.c ** 2) * (dt ** 2)
+        return dx**2 + dy**2 - (self.c**2) * (dt**2)
 
-    def interval_type(self, other: 'SpacetimeEvent') -> str:
+    def interval_type(self, other: "SpacetimeEvent") -> str:
         """
         返回时空间隔类型：'timelike'（类时）, 'lightlike'（类光）, 或 'spacelike'（类空）。
         """
@@ -72,7 +99,7 @@ class SpacetimeEvent:
         else:
             return "spacelike"
 
-    def is_in_future_of(self, other: 'SpacetimeEvent') -> bool:
+    def is_in_future_of(self, other: "SpacetimeEvent") -> bool:
         """
         判断当前事件是否在另一事件的未来光锥内。
         """
@@ -80,7 +107,7 @@ class SpacetimeEvent:
         dt = self.t - other.t
         return s_squared <= 0 and dt > 0
 
-    def is_in_past_of(self, other: 'SpacetimeEvent') -> bool:
+    def is_in_past_of(self, other: "SpacetimeEvent") -> bool:
         """
         判断当前事件是否在另一事件的过去光锥内。
         """
@@ -88,7 +115,7 @@ class SpacetimeEvent:
         dt = self.t - other.t
         return s_squared <= 0 and dt < 0
 
-    def lorentz_transform(self, v: float) -> 'SpacetimeEvent':
+    def lorentz_transform(self, v: float) -> "SpacetimeEvent":
         """
         应用洛伦兹变换（沿x轴方向速度v），返回新参考系中的事件坐标。
 
@@ -100,13 +127,13 @@ class SpacetimeEvent:
         """
         if abs(v) >= self.c:
             raise ValueError("参考系速度不能达到或超过光速")
-        gamma = 1 / math.sqrt(1 - (v ** 2 / self.c ** 2))
+        gamma = 1 / math.sqrt(1 - (v**2 / self.c**2))
         new_x = gamma * (self.x - v * self.t)
-        new_t = gamma * (self.t - (v * self.x) / (self.c ** 2))
+        new_t = gamma * (self.t - (v * self.x) / (self.c**2))
         # y坐标不变，光速c保持不变
         return SpacetimeEvent(new_x, self.y, new_t, self.c)
 
-    def lorentz_transform_y(self, v: float) -> 'SpacetimeEvent':
+    def lorentz_transform_y(self, v: float) -> "SpacetimeEvent":
         """
         沿y轴方向的洛伦兹变换
 
@@ -118,12 +145,12 @@ class SpacetimeEvent:
         """
         if abs(v) >= self.c:
             raise ValueError("参考系速度不能达到或超过光速")
-        gamma = 1 / math.sqrt(1 - (v ** 2 / self.c ** 2))
+        gamma = 1 / math.sqrt(1 - (v**2 / self.c**2))
         new_y = gamma * (self.y - v * self.t)
-        new_t = gamma * (self.t - (v * self.y) / (self.c ** 2))
+        new_t = gamma * (self.t - (v * self.y) / (self.c**2))
         return SpacetimeEvent(self.x, new_y, new_t, self.c)
 
-    def lorentz_transform_xy(self, vx: float, vy: float) -> 'SpacetimeEvent':
+    def lorentz_transform_xy(self, vx: float, vy: float) -> "SpacetimeEvent":
         """
         二维速度矢量的洛伦兹变换（沿任意方向）
 
@@ -134,15 +161,15 @@ class SpacetimeEvent:
         返回:
             SpacetimeEvent: 变换后的事件
         """
-        v_squared = vx ** 2 + vy ** 2
-        if v_squared >= self.c ** 2:
+        v_squared = vx**2 + vy**2
+        if v_squared >= self.c**2:
             raise ValueError("合速度达到或超过光速")
 
-        gamma = 1 / math.sqrt(1 - v_squared / self.c ** 2)
+        gamma = 1 / math.sqrt(1 - v_squared / self.c**2)
         v_dot_r = vx * self.x + vy * self.y  # 速度矢量与位置矢量的点积
 
         # 时间变换
-        new_t = gamma * (self.t - v_dot_r / self.c ** 2)
+        new_t = gamma * (self.t - v_dot_r / self.c**2)
 
         # 空间变换
         spatial_term = (gamma - 1) * (v_dot_r) / v_squared if v_squared != 0 else 0
@@ -151,7 +178,7 @@ class SpacetimeEvent:
 
         return SpacetimeEvent(new_x, new_y, new_t, self.c)
 
-    def move(self, vx: float, vy: float, duration: float) -> 'SpacetimeEvent':
+    def move(self, vx: float, vy: float, duration: float) -> "SpacetimeEvent":
         """
         计算在当前参考系中以恒定速度 (vx, vy) 运动 duration 时间后的新事件
 
@@ -173,7 +200,9 @@ class SpacetimeEvent:
         new_t = self.t + duration
         return SpacetimeEvent(new_x, new_y, new_t, self.c)
 
-    def boost_and_move(self, boost_vx: float, boost_vy: float, local_duration: float) -> 'SpacetimeEvent':
+    def boost_and_move(
+        self, boost_vx: float, boost_vy: float, local_duration: float
+    ) -> "SpacetimeEvent":
         """
         瞬间加速到新参考系后，在新参考系中静止并持续 local_duration 时间，
         最后变换回原参考系的坐标
@@ -192,10 +221,7 @@ class SpacetimeEvent:
         # Step 2: 在新参考系中静止（v=0）并持续指定时间
         # 注意：在新参考系中静止意味着空间坐标不变，时间增加 local_duration
         moved_in_boosted = SpacetimeEvent(
-            boosted_event.x,
-            boosted_event.y,
-            boosted_event.t + local_duration,
-            self.c
+            boosted_event.x, boosted_event.y, boosted_event.t + local_duration, self.c
         )
 
         # Step 3: 逆变换回原参考系
@@ -206,7 +232,7 @@ class SpacetimeEvent:
         return f"SpacetimeEvent(x={self.x}, y={self.y}, t={self.t}, c={self.c})"
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     """建议参照docs中的文档来阅读代码"""
 
     # 在参考系 S 中定义事件（c=1 为默认值）
@@ -224,15 +250,21 @@ if __name__ == '__main__':
     # 将事件B变换到以速度v=0.8c运动的参考系S'中
     v = 0.8  # 自然单位下，c=1，v=0.8表示0.8c
     event_B_transformed = event_B.lorentz_transform(v)
-    print("变换后的事件B坐标:", event_B_transformed)  # 输出: SpacetimeEvent(x=-0.666..., y=0, t=2.333..., c=1)
+    print(
+        "变换后的事件B坐标:", event_B_transformed
+    )  # 输出: SpacetimeEvent(x=-0.666..., y=0, t=2.333..., c=1)
     # 验证变换后的间隔是否仍为类时
-    s_squared_transformed = event_A.lorentz_transform(v).interval_to(event_B_transformed)
+    s_squared_transformed = event_A.lorentz_transform(v).interval_to(
+        event_B_transformed
+    )
     print(f"变换后的间隔平方: {s_squared_transformed}")  # 输出: -5.0 (与原始间隔一致)
     # 示例：验证跨参考系的因果性不变性
     event_D = SpacetimeEvent(1, 1, 2)  # 类时间隔事件
     event_D_transformed = event_D.lorentz_transform(0.6)
     # 判断变换后是否仍在事件A的未来光锥内
-    print(event_D_transformed.is_in_future_of(event_A.lorentz_transform(0.6)))  # 输出: True
+    print(
+        event_D_transformed.is_in_future_of(event_A.lorentz_transform(0.6))
+    )  # 输出: True
 
     # 原始事件：y=2, t=3
     event_E = SpacetimeEvent(0, 2, 3)
@@ -293,7 +325,6 @@ if __name__ == '__main__':
     earth_event = SpacetimeEvent(0, 0, 0)
     final_event = earth_event.boost_and_move(0.8, 0, 1)
     # 验证地球参考系中的时间
-    gamma = 1 / math.sqrt(1 - 0.8 ** 2)  # γ≈1.6667
+    gamma = 1 / math.sqrt(1 - 0.8**2)  # γ≈1.6667
     expected_t = gamma * 1  # ≈1.6667秒
     print(f"实际地球时间: {final_event.t:.4f}秒")  # 输出: 1.6667秒
-

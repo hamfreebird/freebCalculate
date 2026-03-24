@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "freebirdcal"
-version = "0.1.1"
+version = "0.1.2"
 description = "A comprehensive scientific calculation library with astronomy, physics, chemistry, terrain generation and video processing capabilities"
 readme = "readme.md"
 license = "GPL-3.0-or-later"
@@ -55,6 +55,7 @@ geospatial = [
     "scikit-image>=0.18.0",
     "geopandas>=0.10.0",
     "shapely>=1.8.0",
+    "rasterio>=1.2.0",
 ]
 video = [
     "opencv-contrib-python>=4.5.0",
@@ -75,6 +76,7 @@ full = [
     "scikit-image>=0.18.0",
     "geopandas>=0.10.0",
     "shapely>=1.8.0",
+    "rasterio>=1.2.0",
     "opencv-contrib-python>=4.5.0",
     "openvino>=2022.0.0; platform_machine != 'arm64'",
     "tqdm>=4.62.0",
@@ -93,11 +95,14 @@ Repository = "https://github.com/hamfreebird/freebCalculate"
 
 
 [tool.setuptools]
-packages = ["freebirdcal"]
+packages = ["freebirdcal", "freebirdcal.freeastro", "freebirdcal.freeelement", "freebirdcal.freeterrain"]
 include-package-data = true
 
 [tool.setuptools.package-data]
 "freebirdcal" = ["*.py", "*.md"]
+"freebirdcal.freeastro" = ["*.py", "*.md"]
+"freebirdcal.freeelement" = ["*.py", "*.md"]
+"freebirdcal.freeterrain" = ["*.py", "*.md"]
 
 [tool.setuptools.package-dir]
 "" = "."

@@ -14,7 +14,7 @@ def demo_astronomy() -> None:
     try:
         import numpy as np
 
-        from freebirdcal.astro_simulator import AstronomicalSimulator
+        from freebirdcal.freeastro.astro_simulator import AstronomicalSimulator
 
         print("=== Astronomy Simulation Demo ===")
         print("Creating astronomical simulator...")
@@ -44,7 +44,7 @@ def demo_physics() -> None:
     """Demo physics calculation features"""
     try:
         from freebirdcal.formula_cal import escape_velocity
-        from freebirdcal.spacetime_event import SpacetimeEvent
+        from freebirdcal.freeastro.spacetime_event import SpacetimeEvent
 
         print("=== Physics Calculation Demo ===")
 
@@ -57,8 +57,8 @@ def demo_physics() -> None:
         # Spacetime event example
         print("\nSpacetime event example:")
         event1 = SpacetimeEvent(0, 0, 0)
-        event2 = event1.move(1, 0, 5)  # Photon moving at light speed for 5 seconds
-        print(f"Photon position after 5 seconds: {event2}")
+        event2 = event1.move(0.5, 0, 5)  # Object moving at half light speed for 5 seconds
+        print(f"Object position after 5 seconds: {event2}")
         print(f"Interval type: {event1.interval_type(event2)}")
 
         print("Physics demo completed successfully!\n")
@@ -71,7 +71,7 @@ def demo_physics() -> None:
 def demo_chemistry() -> None:
     """Demo chemistry features"""
     try:
-        from freebirdcal.element_manager import UraniumCompoundManager
+        from freebirdcal.freeelement.element_manager import UraniumCompoundManager
 
         print("=== Chemistry Demo ===")
         print("Uranium compound manager example...")
@@ -107,7 +107,7 @@ def demo_chemistry() -> None:
 def demo_terrain() -> None:
     """Demo terrain generation features"""
     try:
-        from freebirdcal.terrain_generator import TerrainGenerator
+        from freebirdcal.freeterrain.terrain_generator import TerrainGenerator
 
         print("=== Terrain Generation Demo ===")
         print("Initializing terrain generator...")

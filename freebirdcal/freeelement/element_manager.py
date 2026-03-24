@@ -1,8 +1,9 @@
-import re
 import csv
-from collections import defaultdict
+import re
 from abc import ABC, abstractmethod
-from element_data import *
+from collections import defaultdict
+
+from .element_data import *
 
 
 class ElementCompoundManager(ABC):
@@ -26,7 +27,7 @@ class ElementCompoundManager(ABC):
 
     def _parse_simple_formula(self, formula: str) -> float:
         """解析简单化学式（无括号）"""
-        elements = re.findall(r'([A-Z][a-z]*)(\d*)', formula)
+        elements = re.findall(r"([A-Z][a-z]*)(\d*)", formula)
         total = 0.0
         for elem, count in elements:
             if elem not in self._atomic_weights:
@@ -39,7 +40,7 @@ class ElementCompoundManager(ABC):
         """解析含括号的复杂化学式"""
         total = 0.0
         # 使用正则表达式查找所有括号及其乘数
-        pattern = re.compile(r'\(([A-Za-z0-9]+)\)(\d*)')
+        pattern = re.compile(r"\(([A-Za-z0-9]+)\)(\d*)")
         matches = list(pattern.finditer(formula))
 
         # 从右到左处理以避免影响后续匹配位置
@@ -57,19 +58,22 @@ class ElementCompoundManager(ABC):
         # 处理剩余部分
         return total + self._parse_simple_formula(formula)
 
-    def add_compound(self, name: str, formula: str, oxidation_states: list,
-                     phase: str, uses: list):
+    def add_compound(
+        self, name: str, formula: str, oxidation_states: list, phase: str, uses: list
+    ):
         """添加新化合物"""
         try:
             mw = self._parse_complex_formula(formula)
-            self.compounds.append({
-                "name": name,
-                "formula": formula,
-                "molecular_weight": round(mw, 2),
-                "oxidation_states": oxidation_states,
-                "phase": phase,
-                "uses": uses
-            })
+            self.compounds.append(
+                {
+                    "name": name,
+                    "formula": formula,
+                    "molecular_weight": round(mw, 2),
+                    "oxidation_states": oxidation_states,
+                    "phase": phase,
+                    "uses": uses,
+                }
+            )
             print(f"成功添加：{name} ({formula})")
         except (ValueError, KeyError) as e:
             print(f"添加失败：{str(e)}")
@@ -85,7 +89,7 @@ class ElementCompoundManager(ABC):
             "total": len(self.compounds),
             "avg_molecular_weight": 0,
             "oxidation_distribution": defaultdict(int),
-            "phase_distribution": defaultdict(int)
+            "phase_distribution": defaultdict(int),
         }
 
         total_weight = 0
@@ -102,11 +106,18 @@ class ElementCompoundManager(ABC):
 
     def save_to_csv(self, filename: str):
         """保存到CSV文件"""
-        with open(filename, 'w', newline='', encoding='utf-8') as f:
-            writer = csv.DictWriter(f, fieldnames=[
-                "name", "formula", "molecular_weight",
-                "oxidation_states", "phase", "uses"
-            ])
+        with open(filename, "w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(
+                f,
+                fieldnames=[
+                    "name",
+                    "formula",
+                    "molecular_weight",
+                    "oxidation_states",
+                    "phase",
+                    "uses",
+                ],
+            )
             writer.writeheader()
             for c in self.compounds:
                 c_copy = c.copy()
@@ -136,18 +147,20 @@ class UraniumCompoundManager(ElementCompoundManager):
 
     def get_nuclear_properties(self):
         """获取核特性统计（铀专用方法）"""
-        nuclear_uses = [
-            "核燃料", "铀浓缩", "核武器", "反应堆"
-        ]
+        nuclear_uses = ["核燃料", "铀浓缩", "核武器", "反应堆"]
         return {
             "nuclear_compounds": [
-                c for c in self.compounds
+                c
+                for c in self.compounds
                 if any(use in nuclear_uses for use in c["uses"])
             ],
-            "count": len([
-                c for c in self.compounds
-                if any(use in nuclear_uses for use in c["uses"])
-            ])
+            "count": len(
+                [
+                    c
+                    for c in self.compounds
+                    if any(use in nuclear_uses for use in c["uses"])
+                ]
+            ),
         }
 
 
@@ -178,7 +191,7 @@ if __name__ == "__main__":
         formula="UO2F2",
         oxidation_states=[6],
         phase="晶体",
-        uses=["催化剂"]
+        uses=["催化剂"],
     )
 
     # 获取统计信息
@@ -191,4 +204,3 @@ if __name__ == "__main__":
 
     # 保存数据
     u_manager.save_to_csv("uranium_compounds.csv")
-

@@ -1,11 +1,13 @@
 import math
 import re
 import time
-import element_data
-from pubchempy import get_compounds
-from itertools import product
 from collections import defaultdict
+from itertools import product
+
+from pubchempy import get_compounds
 from rdkit import Chem
+
+from . import element_data
 
 
 class ElementCompoundGenerate:
@@ -24,8 +26,8 @@ class ElementCompoundGenerate:
                     if (v1 * v2 < 0) or (v1 == 0 and v2 == 0):
                         if v1 == 0 and v2 == 0:
                             x, y = 1, 1
-                            part1 = elem1 + (str(x) if x != 1 else '')
-                            part2 = elem2 + (str(y) if y != 1 else '')
+                            part1 = elem1 + (str(x) if x != 1 else "")
+                            part2 = elem2 + (str(y) if y != 1 else "")
                             formula = part1 + part2
                         else:
                             gcd_val = math.gcd(abs(v1), abs(v2))
@@ -33,11 +35,11 @@ class ElementCompoundGenerate:
                             y = abs(v1) // gcd_val
                             # 根据正价确定顺序
                             if v1 > 0:
-                                part1 = elem1 + (str(x) if x != 1 else '')
-                                part2 = elem2 + (str(y) if y != 1 else '')
+                                part1 = elem1 + (str(x) if x != 1 else "")
+                                part2 = elem2 + (str(y) if y != 1 else "")
                             else:
-                                part1 = elem2 + (str(y) if y != 1 else '')
-                                part2 = elem1 + (str(x) if x != 1 else '')
+                                part1 = elem2 + (str(y) if y != 1 else "")
+                                part2 = elem1 + (str(x) if x != 1 else "")
                             formula = part1 + part2
                         compounds.append(formula)
         # 删除重复项并返回
@@ -68,12 +70,16 @@ class ThreeElementCompoundGenerate:
             # 生成所有可能的价态组合
             valence_choices = {}
             # 处理需要统一价态的元素
-            common_valence_elems = [elem for elem, pos in elem_counts.items() if len(pos) > 1]
+            common_valence_elems = [
+                elem for elem, pos in elem_counts.items() if len(pos) > 1
+            ]
             common_valence_lists = [self.valence[elem] for elem in common_valence_elems]
             for common_vals in product(*common_valence_lists):
                 valence_dict = dict(zip(common_valence_elems, common_vals))
                 # 处理非共同元素的价态
-                non_common_elems = [elem for elem in combo if elem not in common_valence_elems]
+                non_common_elems = [
+                    elem for elem in combo if elem not in common_valence_elems
+                ]
                 non_common_valences = [self.valence[elem] for elem in non_common_elems]
                 for non_common_vals in product(*non_common_valences):
                     # 构建完整的价态数组
@@ -92,10 +98,17 @@ class ThreeElementCompoundGenerate:
                     for a in range(1, max_coeff + 1):
                         for b in range(1, max_coeff + 1):
                             for c in range(1, max_coeff + 1):
-                                if a * valence[0] + b * valence[1] + c * valence[2] == 0:
+                                if (
+                                    a * valence[0] + b * valence[1] + c * valence[2]
+                                    == 0
+                                ):
                                     # 计算最简比例
                                     gcd_val = math.gcd(math.gcd(a, b), c)
-                                    sa, sb, sc = a // gcd_val, b // gcd_val, c // gcd_val
+                                    sa, sb, sc = (
+                                        a // gcd_val,
+                                        b // gcd_val,
+                                        c // gcd_val,
+                                    )
                                     # 合并相同元素的系数
                                     element_counts = defaultdict(int)
                                     for elem, coeff in zip(combo, [sa, sb, sc]):
@@ -104,8 +117,10 @@ class ThreeElementCompoundGenerate:
                                     formula_parts = []
                                     for elem in sorted(element_counts.keys()):
                                         count = element_counts[elem]
-                                        formula_parts.append(elem + (str(count) if count > 1 else ''))
-                                    formula = ''.join(formula_parts)
+                                        formula_parts.append(
+                                            elem + (str(count) if count > 1 else "")
+                                        )
+                                    formula = "".join(formula_parts)
                                     compounds.append(formula)
         # 去重并排序
         return sorted(list(set(compounds)))
@@ -114,7 +129,7 @@ class ThreeElementCompoundGenerate:
 def standardize_formula(formula):
     """将化学式标准化为Hill系统排序"""
     # 使用正则表达式分解元素和原子数
-    elements = re.findall(r'([A-Z][a-z]*)(\d*)', formula)
+    elements = re.findall(r"([A-Z][a-z]*)(\d*)", formula)
 
     # 统计各元素总原子数
     element_counts = {}
@@ -123,14 +138,14 @@ def standardize_formula(formula):
         element_counts[elem] = element_counts.get(elem, 0) + count
 
     # Hill系统排序规则
-    has_carbon = 'C' in element_counts
+    has_carbon = "C" in element_counts
     sorted_elements = []
 
     if has_carbon:
         # 有机化合物：C先，H次，其他按字母序
-        sorted_elements.append(('C', element_counts.pop('C')))
-        if 'H' in element_counts:
-            sorted_elements.append(('H', element_counts.pop('H')))
+        sorted_elements.append(("C", element_counts.pop("C")))
+        if "H" in element_counts:
+            sorted_elements.append(("H", element_counts.pop("H")))
 
     # 剩余元素按字母顺序排序
     remaining = sorted(element_counts.items())
@@ -139,9 +154,9 @@ def standardize_formula(formula):
     # 生成标准化学式
     parts = []
     for elem, count in sorted_elements:
-        parts.append(elem + (str(count) if count > 1 else ''))
+        parts.append(elem + (str(count) if count > 1 else ""))
 
-    return ''.join(parts)
+    return "".join(parts)
 
 
 def is_compound_valid(formula, max_retries=3):
@@ -152,7 +167,7 @@ def is_compound_valid(formula, max_retries=3):
         # 最大重试次数
         for _ in range(max_retries):
             try:
-                results = get_compounds(std_formula, 'formula')
+                results = get_compounds(std_formula, "formula")
                 return len(results) > 0
             except Exception as e:
                 print(f"查询错误: {str(e)}，5秒后重试...")
@@ -177,7 +192,7 @@ def is_chemical_formula_valid(formula):
         pt = Chem.GetPeriodicTable()
 
         # 预处理：去除电荷符号（如 Fe^3+ → Fe）
-        base_formula = re.sub(r'[\^±+-]\d*$', '', formula)
+        base_formula = re.sub(r"[\^±+-]\d*$", "", formula)
 
         # 分解括号结构并验证（如 Fe3(SO4)3 → Fe3S3O12）
         def expand_parentheses(match):
@@ -187,13 +202,15 @@ def is_chemical_formula_valid(formula):
 
         # 递归展开嵌套括号
         while True:
-            new_formula = re.sub(r'\(([A-Za-z0-9]+)\)(\d*)', expand_parentheses, base_formula)
+            new_formula = re.sub(
+                r"\(([A-Za-z0-9]+)\)(\d*)", expand_parentheses, base_formula
+            )
             if new_formula == base_formula:
                 break
             base_formula = new_formula
 
         # 验证元素符号和原子数
-        elements = re.findall(r'([A-Z][a-z]*)(\d*)', base_formula)
+        elements = re.findall(r"([A-Z][a-z]*)(\d*)", base_formula)
         if not elements:
             return False
 
@@ -224,4 +241,3 @@ if __name__ == "__main__":
     for compound in compounds:
         compound = standardize_formula(compound)
         print(compound + "  " + str(is_chemical_formula_valid(compound)))
-

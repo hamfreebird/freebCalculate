@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: freebirdcal
-Version: 0.1.1
+Version: 0.1.2
 Summary: A comprehensive scientific calculation library with astronomy, physics, chemistry, terrain generation and video processing capabilities
 Author-email: freebird <freebirdflyinthesky@outlook.com>
 Maintainer-email: freebird <freebirdflyinthesky@outlook.com>
@@ -39,6 +39,7 @@ Provides-Extra: geospatial
 Requires-Dist: scikit-image>=0.18.0; extra == "geospatial"
 Requires-Dist: geopandas>=0.10.0; extra == "geospatial"
 Requires-Dist: shapely>=1.8.0; extra == "geospatial"
+Requires-Dist: rasterio>=1.2.0; extra == "geospatial"
 Provides-Extra: video
 Requires-Dist: opencv-contrib-python>=4.5.0; extra == "video"
 Requires-Dist: openvino>=2022.0.0; platform_machine != "arm64" and extra == "video"
@@ -55,6 +56,7 @@ Requires-Dist: astropy>=5.0; extra == "full"
 Requires-Dist: scikit-image>=0.18.0; extra == "full"
 Requires-Dist: geopandas>=0.10.0; extra == "full"
 Requires-Dist: shapely>=1.8.0; extra == "full"
+Requires-Dist: rasterio>=1.2.0; extra == "full"
 Requires-Dist: opencv-contrib-python>=4.5.0; extra == "full"
 Requires-Dist: openvino>=2022.0.0; platform_machine != "arm64" and extra == "full"
 Requires-Dist: tqdm>=4.62.0; extra == "full"

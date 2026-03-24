@@ -14,14 +14,14 @@ FreebirdCal provides tools for:
 - Fractal visualization
 """
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 __author__ = "freebird"
 __license__ = "GPLv3"
 
-# Import main modules to make them available at package level
+# Import astronomy modules from freeastro subpackage
 try:
-    from .astro_simulator import AstronomicalSimulator, FITSReader
-    from .interactive_telescope import (
+    from .freeastro.astro_simulator import AstronomicalSimulator, FITSReader
+    from .freeastro.interactive_telescope import (
         InteractiveTelescopeSimulator,
         ObservationParameters,
         TelescopeParameters,
@@ -40,7 +40,10 @@ except ImportError:
     pass
 
 try:
-    from .spacetime_event import SpacetimeEvent, relativistic_velocity_addition
+    from .freeastro.spacetime_event import (
+        SpacetimeEvent,
+        relativistic_velocity_addition,
+    )
 except ImportError:
     SpacetimeEvent = None
     relativistic_velocity_addition = None
@@ -56,12 +59,12 @@ except ImportError:
     NumberOperations = None
 
 try:
-    from .spacetime_coordinate import SpacetimeCoordinateSystem
+    from .freeastro.spacetime_coordinate import SpacetimeCoordinateSystem
 except ImportError:
     SpacetimeCoordinateSystem = None
 
 try:
-    from .contour_map import VirtualContourMapGenerator
+    from .freeterrain.contour_map import VirtualContourMapGenerator
 except ImportError:
     VirtualContourMapGenerator = None
 
@@ -77,17 +80,17 @@ except ImportError:
     Position = None
 
 try:
-    from .orbital_dynamics import OrbitalDynamics
+    from .freeastro.orbital_dynamics import OrbitalDynamics
 except ImportError:
     OrbitalDynamics = None
 
 try:
-    from .element_manager import UraniumCompoundManager
+    from .freeelement.element_manager import UraniumCompoundManager
 except ImportError:
     UraniumCompoundManager = None
 
 try:
-    from .element_generate import (
+    from .freeelement.element_generate import (
         ElementCompoundGenerate,
         ThreeElementCompoundGenerate,
         is_chemical_formula_valid,
@@ -100,18 +103,23 @@ except ImportError:
     is_chemical_formula_valid = None
 
 try:
-    from .terrain_generator import TerrainGenerator
+    from .freeterrain.terrain_generator import TerrainGenerator
 except ImportError:
     TerrainGenerator = None
+
+try:
+    from .freeterrain.elevation_analyzer import ElevationAnalyzer
+except ImportError:
+    ElevationAnalyzer = None
 
 # try:
 #     from .zen_fractal import ZenFractal
 # except ImportError:
 #     ZenFractal = None
 
-# Import element_data for chemical data
+# Import element_data for chemical data from freeelement subpackage
 try:
-    from . import element_data
+    from .freeelement import element_data
 except ImportError:
     element_data = None
 
@@ -139,6 +147,7 @@ __all__ = [
     "standardize_formula",
     "is_chemical_formula_valid",
     "TerrainGenerator",
+    "ElevationAnalyzer",
     "element_data",
 ]
 

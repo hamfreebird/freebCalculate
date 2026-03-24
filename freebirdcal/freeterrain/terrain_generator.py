@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """
-高级地形生成器 (类封装版本)
+高级地形生成器
 支持构造抬升、河流侵蚀、山坡扩散、微观细节，并输出高度图(RAW)和纹理权重图(Splatmap)。
 """
 
+import os
+import tempfile
 import warnings
 
 import matplotlib.pyplot as plt
@@ -26,6 +28,17 @@ try:
 except ImportError:
     LANDLAB_AVAILABLE = False
     warnings.warn("Landlab 未安装，将无法进行侵蚀模拟。请安装: pip install landlab")
+
+# 检查 ElevationAnalyzer 可用性
+try:
+    from .elevation_analyzer import ElevationAnalyzer
+
+    ELEVATION_ANALYZER_AVAILABLE = True
+except ImportError:
+    ELEVATION_ANALYZER_AVAILABLE = False
+    warnings.warn(
+        "ElevationAnalyzer 依赖未安装，将无法生成 Shapefile。请安装: pip install freebirdcal[geospatial]"
+    )
 
 
 class TerrainGenerator:
@@ -297,6 +310,80 @@ class TerrainGenerator:
         img = Image.fromarray(splat_uint8, mode="RGBA")
         img.save(filename)
 
+    def save_to_shapefile(
+        self,
+        output_path,
+        interval=10,
+        crs="EPSG:4326",
+        pixel_size=None,
+        top_left_x=0,
+        top_left_y=0,
+        smooth_sigma=0,
+        z=None,
+    ):
+        """
+        将地形数据保存为等高线 Shapefile 文件
+
+        利用 ElevationAnalyzer 模块将地形数据转换为 GeoTIFF 格式，
+        然后生成等高线并保存为 Shapefile。
+
+        :param output_path: 输出的 .shp 文件路径
+        :param interval: 等高线间隔（米）
+        :param crs: 坐标参考系统，默认为 WGS84 (EPSG:4326)
+        :param pixel_size: 像素尺寸（米），默认为 self.dx
+        :param top_left_x: 左上角 X 坐标（米）
+        :param top_left_y: 左上角 Y 坐标（米）
+        :param smooth_sigma: 等高线平滑系数（高斯平滑标准差）
+        :param z: 地形数据数组，若为 None 则使用 self.final_z
+        :raises ImportError: 当 ElevationAnalyzer 依赖不可用时抛出
+        :raises ValueError: 当地形数据未生成时抛出
+        """
+        if not ELEVATION_ANALYZER_AVAILABLE:
+            raise ImportError(
+                "ElevationAnalyzer 依赖未安装，无法生成 Shapefile。"
+                "请安装: pip install freebirdcal[geospatial]"
+            )
+
+        if z is None:
+            if self.final_z is None:
+                raise ValueError("地形数据未生成，请先运行地形生成流程。")
+            z = self.final_z
+
+        if pixel_size is None:
+            pixel_size = self.dx
+
+        # 创建临时目录和文件
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # 保存为原始二进制文件
+            raw_path = os.path.join(temp_dir, "terrain.raw")
+            z.astype(np.float32).tofile(raw_path)
+
+            # 创建临时 GeoTIFF 文件
+            tif_path = os.path.join(temp_dir, "terrain.tif")
+
+            # 使用 ElevationAnalyzer 的静态方法转换为 GeoTIFF
+            ElevationAnalyzer.raw_to_geotiff(
+                raw_path=raw_path,
+                output_path=tif_path,
+                width=self.shape[1],  # 注意：宽度是列数 (ny)
+                height=self.shape[0],  # 高度是行数 (nx)
+                dtype=np.float32,
+                crs=crs,
+                pixel_size=pixel_size,
+                top_left_x=top_left_x,
+                top_left_y=top_left_y,
+            )
+
+            # 使用 ElevationAnalyzer 生成等高线并保存为 Shapefile
+            with ElevationAnalyzer(tif_path) as ea:
+                ea.export_contours(
+                    output_path=output_path,
+                    interval=interval,
+                    smooth_sigma=smooth_sigma,
+                )
+
+        print(f"Shapefile 已保存至: {output_path}")
+
     def visualize(self, save_plots=False, prefix="terrain"):
         """
         生成可视化图表（可选保存）
@@ -355,9 +442,31 @@ class TerrainGenerator:
         river_threshold=500000,
         save_plots=True,
         out_prefix="terrain",
+        save_shapefile=False,
+        shapefile_interval=10,
+        shapefile_crs="EPSG:4326",
+        shapefile_pixel_size=None,
+        shapefile_top_left_x=0,
+        shapefile_top_left_y=0,
+        shapefile_smooth_sigma=0,
     ):
         """
         执行完整的地形生成流程
+
+        :param total_time: 总模拟时间（年）
+        :param dt: 时间步长（年）
+        :param micro_amplitude: 微观细节振幅（米）
+        :param micro_scale: 微观细节尺度
+        :param river_threshold: 河流阈值（平方米）
+        :param save_plots: 是否保存可视化图片
+        :param out_prefix: 输出文件名前缀
+        :param save_shapefile: 是否保存为 Shapefile 格式
+        :param shapefile_interval: 等高线间隔（米）
+        :param shapefile_crs: 坐标参考系统
+        :param shapefile_pixel_size: 像素尺寸（米），默认为 self.dx
+        :param shapefile_top_left_x: 左上角 X 坐标（米）
+        :param shapefile_top_left_y: 左上角 Y 坐标（米）
+        :param shapefile_smooth_sigma: 等高线平滑系数
         """
         print("=" * 60)
         print("高级地形生成器 - 构造抬升 + 河流侵蚀 + 微观细节 + Splatmap")
@@ -398,12 +507,34 @@ class TerrainGenerator:
         print(f"  - 高度图 RAW: {out_prefix}_heightmap.raw")
         print(f"  - Splatmap PNG: {out_prefix}_splatmap.png")
 
+        # 保存 Shapefile（如果启用）
+        if save_shapefile:
+            try:
+                shapefile_output = f"{out_prefix}_contours.shp"
+                if shapefile_pixel_size is None:
+                    shapefile_pixel_size = self.dx
+
+                print(f"  - Shapefile: {shapefile_output}")
+                self.save_to_shapefile(
+                    output_path=shapefile_output,
+                    interval=shapefile_interval,
+                    crs=shapefile_crs,
+                    pixel_size=shapefile_pixel_size,
+                    top_left_x=shapefile_top_left_x,
+                    top_left_y=shapefile_top_left_y,
+                    smooth_sigma=shapefile_smooth_sigma,
+                )
+            except ImportError as e:
+                warnings.warn(f"无法保存 Shapefile: {e}")
+            except Exception as e:
+                warnings.warn(f"保存 Shapefile 时出错: {e}")
+
         # 可视化
         if save_plots:
             self.visualize(save_plots=True, prefix=out_prefix)
 
         print("\n" + "=" * 60)
-        print("✅ 生成完成！")
+        print("生成完成！")
         print("=" * 60)
 
 
