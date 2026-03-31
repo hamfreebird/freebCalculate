@@ -3,6 +3,12 @@
 
 ---
 
+[![License](https://img.shields.io/badge/License-GPL%203.0-blue.svg)](https://opensource.org/licenses/GPL-3.0)
+[![PyPI version](https://badge.fury.io/py/freebirdcal.svg)](https://badge.fury.io/py/freebirdcal)
+[![Python](https://img.shields.io/badge/Python-3.7%2B-blue)](https://www.python.org/)
+
+---
+
 ## **依赖**
 本库依赖以下第三方库：
 ```base
@@ -390,7 +396,7 @@ gen.save_splatmap_png("custom_splatmap.png")
 - 详细文档在docs目录里，注意formula_cal.py和number_operations.py没有对应文档。
 - number_operations.py不成熟，计算复杂表达式时可能出错。
 - element_data.py存储着所有元素的相对原子质量和化合价，以及用于示例的铀和铜的化合物列表.
-- zen_fractal.py没啥用处，依赖pygame，不过可以点开玩玩。
+- zen_fractal.py没啥用处，依赖pygame，不过可以点开玩玩：python -m freebirdcal.zen_fractal
 
 ---
 

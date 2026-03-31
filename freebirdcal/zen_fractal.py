@@ -1,210 +1,284 @@
-import pygame
 import math
-import colorsys
 import random
-from pygame.locals import *
-from pygame.math import Vector2
+import sys
+from typing import List, Tuple
 
-# === 初始化配置 ===
+import pygame
+
+# 初始化pygame
 pygame.init()
-WIDTH, HEIGHT = 800, 800  # 窗口尺寸
+
+# 屏幕设置
+WIDTH, HEIGHT = 1200, 800
+CENTER_X, CENTER_Y = WIDTH // 2, HEIGHT // 2
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("freebird fly in the sky~")
-clock = pygame.time.Clock()
+pygame.display.set_caption("Zen Fractal - 旋转龙分形")
 
-# === 核心参数 ===
-GOLDEN_RATIO = (math.sqrt(5) - 1) / 2  # 黄金分割比例
-MAX_DEPTH = 11  # 分形最大递归深度
-BASE_ROT_SPEED = 0.03  # 基础旋转速度(弧度/帧)
-STAR_COUNT = 100000  # 星尘粒子数量
-BLOOM_LAYERS = 5  # 光晕效果层级
-
-
-def apply_bloom(surface, iterations=2):
-    for _ in range(iterations):
-        scaled = pygame.transform.smoothscale(surface, (WIDTH // 2, HEIGHT // 2))
-        scaled = pygame.transform.smoothscale(scaled, (WIDTH, HEIGHT))
-        scaled.set_alpha(80)
-        surface.blit(scaled, (0, 0))
+# 颜色定义
+BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
+COLORS = [
+    (255, 100, 100),  # 红色
+    (100, 255, 100),  # 绿色
+    (100, 100, 255),  # 蓝色
+    (255, 255, 100),  # 黄色
+    (255, 100, 255),  # 洋红
+    (100, 255, 255),  # 青色
+]
 
 
-class SynestheticExperience:
-    """主体验类，整合视觉与音频模拟系统"""
-
+# 光晕粒子类
+class GlowParticle:
     def __init__(self):
-        """初始化系统资源"""
-        self.time = 0  # 时间计数器
-        self.init_starfield()  # 初始化星尘粒子
-        self.init_audio_params()  # 初始化音频参数
-        self.bloom_cache = [  # 光晕效果缓存
-            pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
-            for _ in range(BLOOM_LAYERS)
-        ]
+        self.x = random.randint(0, WIDTH)
+        self.y = random.randint(0, HEIGHT)
+        self.size = random.randint(2, 8)
+        self.speed_x = random.uniform(-0.5, 0.5)
+        self.speed_y = random.uniform(-0.5, 0.5)
+        self.color = random.choice(
+            [
+                (255, 255, 200, 30),  # 淡黄色
+                (200, 255, 255, 30),  # 淡青色
+                (255, 200, 255, 30),  # 淡洋红
+                (255, 255, 255, 20),  # 白色
+            ]
+        )
+        self.pulse_speed = random.uniform(0.01, 0.03)
+        self.pulse_offset = random.uniform(0, math.pi * 2)
 
-    def init_starfield(self):
-        """生成随机星尘粒子系统"""
-        self.starfield = [(
-            Vector2(random.random() * WIDTH, random.random() * HEIGHT),
-            random.uniform(0.3, 1.0),
-            random.choice([0.5, 0.7, 1.0])
-        ) for _ in range(STAR_COUNT)]
+    def update(self):
+        self.x += self.speed_x
+        self.y += self.speed_y
 
-    def init_audio_params(self):
-        """初始化虚拟音频参数"""
-        self.bass_beat = 0.0  # 低频节奏强度 (0-1)
-        self.treble_peak = 0.0  # 高频能量强度 (0-1)
-        self.melody_phase = 0.0  # 旋律相位 (0-1)
+        # 边界检查
+        if self.x < 0 or self.x > WIDTH:
+            self.speed_x *= -1
+        if self.y < 0 or self.y > HEIGHT:
+            self.speed_y *= -1
 
-    def update_audio_simulation(self):
-        """更新虚拟音乐参数生成器"""
-        self.time += 1
-        # 低频节奏模拟（每2秒一个节拍）
-        self.bass_beat = max(0, math.sin(math.radians(self.time * 0.9)) ** 15)
-
-        # 高频节奏模拟（快速变化）
-        self.treble_peak = math.sin(self.time * 0.02) ** 3 * 0.8 + 0.2
-
-        # 旋律相位模拟（缓慢循环）
-        self.melody_phase = (self.time * 0.005) % 1
-
-    def gradient_background(self, surface):
-        """绘制动态渐变背景"""
-        for y in range(HEIGHT):
-            # 基于垂直位置和时间的色彩变化
-            h = 0.6 + math.sin(y / HEIGHT * math.pi * 2 + self.time * 0.001) * 0.02
-            l = 0.1 + 0.15 * (1 - y / HEIGHT)  # 亮度渐变
-            color = colorsys.hls_to_rgb(h, l, 1)
-            pygame.draw.line(surface, [c * 230 for c in color], (0, y), (WIDTH, y))
-
-    def draw_stars(self, surface):
-        """绘制音乐驱动的星尘粒子"""
-        for i, (pos, size, speed) in enumerate(self.starfield):
-            # 粒子漂移运动
-            drift = Vector2(
-                math.sin(self.time * speed * 0.01 + i),
-                math.cos(self.time * speed * 0.008 + i)
-            ) * (0.3 + self.treble_peak * 0.5)
-
-            new_pos = pos + drift
-            # 粒子强度计算
-            intensity = 0.5 + 0.5 * math.sin(self.time * speed * 0.1) * self.treble_peak
-            alpha = min(255, 80 * intensity * (0.7 + self.bass_beat * 0.3))
-
-            # 边界循环处理
-            if new_pos.x < 0 or new_pos.x > WIDTH:
-                new_pos.x = random.random() * WIDTH
-            if new_pos.y < 0 or new_pos.y > HEIGHT:
-                new_pos.y = random.random() * HEIGHT
-
-            self.starfield[i] = (new_pos, size, speed)
-            # 绘制粒子
-            pygame.draw.circle(surface,
-                               (255, 255, 255, int(alpha)),
-                               (int(new_pos.x), int(new_pos.y)),
-                               int(size * (1 + self.bass_beat * 0.5)))
-
-    def get_depth_color(self, depth):
-        """生成基于景深的颜色"""
-        hue = 0.62 + depth * 0.01 + self.melody_phase * 0.1  # 色相偏移
-        sat = 0.4 - depth * 0.03  # 饱和度递减
-        lum = 0.6 - depth * 0.04  # 亮度递减
-        alpha = 180 - depth * 12  # 透明度递减
-
-        rgb = [c * 255 for c in colorsys.hls_to_rgb(hue % 1, lum, sat)]
-        return (*rgb, alpha * (0.9 + self.treble_peak * 0.1))
-
-    def recursive_fractal(self, surface, depth, points, angle):
-        """递归生成分形结构"""
-        if depth > MAX_DEPTH:
-            return
-
-        # 景深效果参数
-        scale = 0.92 ** depth  # 尺寸缩放
-        blur = depth * 0.3  # 模糊强度
-        layer = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
-
-        # 坐标变换与绘制
-        rotated = [p.rotate(angle * scale) * scale + Vector2(WIDTH / 2, HEIGHT / 2) for p in points]
-        pygame.draw.polygon(layer, self.get_depth_color(depth), rotated,
-                width = int(2 - depth * 0.1))
-
-        # 应用模糊效果
-        scaled = pygame.transform.smoothscale(layer, (WIDTH // 2, HEIGHT // 2))
-        blurred = pygame.transform.smoothscale(scaled, (WIDTH, HEIGHT))
-        blurred.set_alpha(80)
-        surface.blit(blurred, (0, 0))
-
-        # 生成子分形顶点
-        new_points = []
-        for i in range(len(points)):
-            dir_vec = points[(i + 1) % len(points)] - points[i]
-            new_point = points[i] + dir_vec * GOLDEN_RATIO
-            # 添加音乐驱动的扰动
-            new_point += Vector2.from_polar((self.bass_beat * 3, random.uniform(0, 360)))
-            new_points.append(new_point.rotate(angle * 0.2))
-
-        # 递归调用
-        self.recursive_fractal(
-            surface, depth + 1,
-            new_points,
-            angle + math.radians(2 + 5 * math.sin(self.time * 0.01 + depth)))
-
-
-    def generate_light_halo(self):
-        """生成多层光晕效果"""
-        base = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
-        # 生成基础分形
-        self.recursive_fractal(base, 0, [
-            Vector2(0, -200),
-            Vector2(173.2, 100),  # 等边三角形顶点
-            Vector2(-173.2, 100)
-        ], math.radians(self.time * BASE_ROT_SPEED))
-
-        # 生成模糊层级
-        for i in range(BLOOM_LAYERS):
-            scaled = pygame.transform.smoothscale(base, (WIDTH // 2, HEIGHT // 2))
-            scaled = pygame.transform.smoothscale(scaled, (WIDTH, HEIGHT))
-            self.bloom_cache[i] = scaled
-            self.bloom_cache[i].set_alpha(80 - i * 20)
-
+        # 脉冲效果
+        pulse = math.sin(pygame.time.get_ticks() * self.pulse_speed + self.pulse_offset)
+        self.current_size = self.size * (0.8 + 0.2 * pulse)
 
     def draw(self, surface):
-        """主绘制循环"""
-        self.update_audio_simulation()
-        surface.fill((0, 0, 0))  # 清空画布
+        pygame.draw.circle(
+            surface, self.color, (int(self.x), int(self.y)), int(self.current_size)
+        )
 
-        # 绘制背景
-        self.gradient_background(surface)
-        self.draw_stars(surface)
 
-        # 生成光晕效果
-        self.generate_light_halo()
+# 龙分形生成器
+class DragonFractal:
+    def __init__(self):
+        self.points = []
+        self.rotation_angle = 0
+        self.rotation_speed = 0.5  # 度/帧
+        self.scale = 1.0
+        self.scale_speed = 0.001
+        self.max_iterations = 15
+        self.current_iterations = 10
+        self.color_index = 0
+        self.color_change_speed = 0.1
 
-        # 混合光晕层
-        for bloom in self.bloom_cache:
-            surface.blit(bloom, (0, 0))
+    def generate_dragon_curve(self, iterations: int) -> List[Tuple[float, float]]:
+        """生成龙曲线点"""
+        # 使用L-system生成龙曲线
+        sequence = "FX"
+        for _ in range(iterations):
+            new_seq = ""
+            for char in sequence:
+                if char == "X":
+                    new_seq += "X+YF+"
+                elif char == "Y":
+                    new_seq += "-FX-Y"
+                else:
+                    new_seq += char
+            sequence = new_seq
 
-        # 添加中心高光
-        glow = pygame.Surface((300, 300), pygame.SRCALPHA)
-        pygame.draw.circle(glow, (180, 180, 255, 60), (150, 150), 150)
-        scaled = pygame.transform.smoothscale(glow, (WIDTH // 2, HEIGHT // 2))
-        scaled = pygame.transform.smoothscale(scaled, (WIDTH, HEIGHT))
-        scaled.set_alpha(80)
-        surface.blit(scaled, (WIDTH // 2 - 150, HEIGHT // 2 - 150))
+        # 解析序列生成点
+        points = []
+        x, y = 0, 0
+        angle = 0
+        step = 8
 
-# === 主程序 ===
-if __name__ == "__main__":
-    experience = SynestheticExperience()
+        for char in sequence:
+            if char == "F":
+                x += step * math.cos(math.radians(angle))
+                y += step * math.sin(math.radians(angle))
+                points.append((x, y))
+            elif char == "+":
+                angle += 90
+            elif char == "-":
+                angle -= 90
+
+        return points
+
+    def update(self):
+        """更新分形状态"""
+        # 旋转
+        self.rotation_angle += self.rotation_speed
+        if self.rotation_angle >= 360:
+            self.rotation_angle -= 360
+
+        # 缩放
+        self.scale += self.scale_speed
+        if self.scale > 1.5 or self.scale < 0.5:
+            self.scale_speed *= -1
+
+        # 颜色变化
+        self.color_index += self.color_change_speed
+        if self.color_index >= len(COLORS):
+            self.color_index = 0
+
+        # 更新分形点
+        self.points = self.generate_dragon_curve(self.current_iterations)
+
+    def draw(self, surface):
+        """绘制分形"""
+        if not self.points:
+            return
+
+        # 计算变换矩阵
+        cos_a = math.cos(math.radians(self.rotation_angle))
+        sin_a = math.sin(math.radians(self.rotation_angle))
+
+        # 变换并绘制点
+        transformed_points = []
+        for x, y in self.points:
+            # 缩放
+            sx = x * self.scale
+            sy = y * self.scale
+
+            # 旋转
+            rx = sx * cos_a - sy * sin_a
+            ry = sx * sin_a + sy * cos_a
+
+            # 平移至中心
+            tx = CENTER_X + rx
+            ty = CENTER_Y + ry
+
+            transformed_points.append((tx, ty))
+
+        # 绘制线条
+        color = COLORS[int(self.color_index) % len(COLORS)]
+        if len(transformed_points) > 1:
+            # 绘制主线条
+            pygame.draw.lines(surface, color, False, transformed_points, 2)
+
+            # 绘制渐变效果的点
+            for i, (x, y) in enumerate(transformed_points):
+                alpha = i / len(transformed_points)
+                point_color = (
+                    int(color[0] * alpha),
+                    int(color[1] * alpha),
+                    int(color[2] * alpha),
+                )
+                radius = max(1, int(3 * alpha))
+                pygame.draw.circle(surface, point_color, (int(x), int(y)), radius)
+
+
+# 创建光晕层
+def create_glow_surface():
+    """创建光晕表面"""
+    glow_surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+
+    # 创建径向渐变
+    for radius in range(200, 0, -10):
+        alpha = int(10 * (radius / 200))
+        color = (255, 255, 255, alpha)
+        pygame.draw.circle(glow_surface, color, (CENTER_X, CENTER_Y), radius)
+
+    return glow_surface
+
+
+# 主函数
+def main():
+    clock = pygame.time.Clock()
+    font = pygame.font.SysFont(None, 24)
+
+    # 创建分形
+    dragon = DragonFractal()
+
+    # 创建光晕粒子
+    glow_particles = [GlowParticle() for _ in range(100)]
+
+    # 创建光晕表面
+    glow_surface = create_glow_surface()
+
     running = True
-
+    show_controls = True
 
     while running:
         for event in pygame.event.get():
-            if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
+            if event.type == pygame.QUIT:
                 running = False
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    running = False
+                elif event.key == pygame.K_SPACE:
+                    show_controls = not show_controls
+                elif event.key == pygame.K_UP:
+                    dragon.current_iterations = min(
+                        dragon.current_iterations + 1, dragon.max_iterations
+                    )
+                elif event.key == pygame.K_DOWN:
+                    dragon.current_iterations = max(dragon.current_iterations - 1, 3)
+                elif event.key == pygame.K_r:
+                    dragon.rotation_speed *= -1
+                elif event.key == pygame.K_c:
+                    dragon.color_change_speed *= -1
 
-        experience.draw(screen)
+        # 清屏
+        screen.fill(BLACK)
+
+        # 绘制光晕背景
+        screen.blit(glow_surface, (0, 0), special_flags=pygame.BLEND_ADD)
+
+        # 更新和绘制光晕粒子
+        for particle in glow_particles:
+            particle.update()
+            particle.draw(screen)
+
+        # 更新和绘制分形
+        dragon.update()
+        dragon.draw(screen)
+
+        # 绘制控制提示
+        if show_controls:
+            controls = [
+                "up/down: Increase/reduce fractal iterations",
+                "Space: display/hide control prompt",
+                "ESC: exit program",
+            ]
+            # controls = [
+            #     "控制说明:",
+            #     "↑/↓: 增加/减少分形迭代次数",
+            #     "R: 反转旋转方向",
+            #     "C: 反转颜色变化方向",
+            #     "空格: 显示/隐藏控制提示",
+            #     "ESC: 退出程序",
+            #     f"当前迭代: {dragon.current_iterations}",
+            #     f"旋转速度: {dragon.rotation_speed:.1f}°/帧",
+            # ]
+
+            for i, text in enumerate(controls):
+                text_surface = font.render(text, True, WHITE)
+                screen.blit(text_surface, (10, 10 + i * 25))
+
+        # 绘制标题
+        title_font = pygame.font.SysFont(None, 48)
+        title = title_font.render("Zen Fractal - Rotary dragon fractal", True, WHITE)
+        screen.blit(title, (WIDTH // 2 - title.get_width() // 2, 20))
+
+        # 绘制帧率
+        fps_text = font.render(f"FPS: {int(clock.get_fps())}", True, WHITE)
+        screen.blit(fps_text, (WIDTH - 100, 10))
+
         pygame.display.flip()
-        clock.tick(60)  # 锁定60FPS
+        clock.tick(60)
 
     pygame.quit()
+    sys.exit()
+
+
+if __name__ == "__main__":
+    main()

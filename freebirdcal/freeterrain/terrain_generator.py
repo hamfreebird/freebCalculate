@@ -35,10 +35,16 @@ try:
 
     ELEVATION_ANALYZER_AVAILABLE = True
 except ImportError:
-    ELEVATION_ANALYZER_AVAILABLE = False
-    warnings.warn(
-        "ElevationAnalyzer 依赖未安装，将无法生成 Shapefile。请安装: pip install freebirdcal[geospatial]"
-    )
+    # 尝试绝对导入，适用于直接运行脚本的情况
+    try:
+        from elevation_analyzer import ElevationAnalyzer
+
+        ELEVATION_ANALYZER_AVAILABLE = True
+    except ImportError:
+        ELEVATION_ANALYZER_AVAILABLE = False
+        warnings.warn(
+            "ElevationAnalyzer 依赖未安装，将无法生成 Shapefile。请安装: pip install freebirdcal[geospatial]"
+        )
 
 
 class TerrainGenerator:

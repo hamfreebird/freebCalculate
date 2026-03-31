@@ -5,6 +5,8 @@ mpmath>=1.2.0
 
 [astronomy]
 astropy>=5.0
+pandas>=3.0
+sqlalchemy>=2.0
 
 [chemistry]
 pubchempy>=1.0.4
@@ -23,6 +25,8 @@ rdkit>=2022.0.0
 noise>=1.2.0
 pillow>=9.0.0
 landlab>=2.3.0
+pandas>=3.0
+sqlalchemy>=2.0
 
 [full:platform_machine != "arm64"]
 openvino>=2022.0.0

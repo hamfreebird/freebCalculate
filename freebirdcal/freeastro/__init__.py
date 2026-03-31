@@ -9,16 +9,21 @@ This subpackage provides tools for:
 - Spacetime event analysis and Lorentz transformations
 """
 
+import logging
+
 __version__ = "0.1.3"
 __author__ = "freebird"
 __license__ = "GPLv3"
 
+logger = logging.getLogger(__name__)
+
 # Import astro_simulator classes
 try:
     from .astro_simulator import AstronomicalSimulator, FITSReader
-except ImportError:
+except ImportError as e:
     AstronomicalSimulator = None
     FITSReader = None
+    logger.error(f"Error: {e}")
 
 # Import interactive_telescope classes
 try:
@@ -27,29 +32,33 @@ try:
         ObservationParameters,
         TelescopeParameters,
     )
-except ImportError:
+except ImportError as e:
     InteractiveTelescopeSimulator = None
     TelescopeParameters = None
     ObservationParameters = None
+    logger.error(f"Error: {e}")
 
 # Import orbital_dynamics classes
 try:
     from .orbital_dynamics import OrbitalDynamics
-except ImportError:
+except ImportError as e:
     OrbitalDynamics = None
+    logger.error(f"Error: {e}")
 
 # Import spacetime_coordinate classes
 try:
     from .spacetime_coordinate import SpacetimeCoordinateSystem
-except ImportError:
+except ImportError as e:
     SpacetimeCoordinateSystem = None
+    logger.error(f"Error: {e}")
 
 # Import spacetime_event classes and functions
 try:
     from .spacetime_event import SpacetimeEvent, relativistic_velocity_addition
-except ImportError:
+except ImportError as e:
     SpacetimeEvent = None
     relativistic_velocity_addition = None
+    logger.error(f"Error: {e}")
 
 # List of all available modules and functions
 __all__ = [

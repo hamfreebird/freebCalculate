@@ -8,15 +8,20 @@ This subpackage provides tools for:
 - Chemical formula parsing and analysis
 """
 
+import logging
+
 __version__ = "0.1.3"
 __author__ = "freebird"
 __license__ = "GPLv3"
 
+logger = logging.getLogger(__name__)
+
 # Import element_data module for chemical data
 try:
     from . import element_data
-except ImportError:
+except ImportError as e:
     element_data = None
+    logger.error(f"Error: {e}")
 
 # Import element_generate classes and functions
 try:
@@ -26,17 +31,19 @@ try:
         is_chemical_formula_valid,
         standardize_formula,
     )
-except ImportError:
+except ImportError as e:
     ElementCompoundGenerate = None
     ThreeElementCompoundGenerate = None
     is_chemical_formula_valid = None
     standardize_formula = None
+    logger.error(f"Error: {e}")
 
 # Import element_manager classes
 try:
     from .element_manager import UraniumCompoundManager
-except ImportError:
+except ImportError as e:
     UraniumCompoundManager = None
+    logger.error(f"Error: {e}")
 
 # List of all available modules and functions
 __all__ = [
